@@ -1,2 +1,6 @@
 *.jpg
-
+*.json
+build
+CMakeFiles
+*.a
+*.so

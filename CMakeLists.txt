@@ -7,7 +7,7 @@
 # # include_directories( main ${CMAKE_SOURCE_DIR}/lib)
 cmake_minimum_required(VERSION 3.10.0)
 project(main)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 find_package(OpenCV REQUIRED)
 # include_directories(/home/user98/onnxruntime/include/onnxruntime/core/session)
 find_path(ONNX_RUNTIME_SESSION_INCLUDE_DIRS onnxruntime_cxx_api.h HINTS /usr/local/include/onnxruntime/)

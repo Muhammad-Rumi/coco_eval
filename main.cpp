@@ -2,7 +2,7 @@
 // #include <onnxruntime/core/providers.h>
 // #include <onnxruntime/core/session.h>
 // #include <onnxruntime/core/tensor.h>
-// #include <onnxruntime_cxx_api.h>
+#include <onnxruntime_cxx_api.h>
 
 // #include <onnxruntime_cxx/onnxruntime_cxx.h>
 #include "data_loader.hpp"  // NOLINT

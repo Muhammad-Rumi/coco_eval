@@ -1,5 +1,6 @@
 
-#include "lib.hpp"
+#include "lib.hpp"  // NOLINT
+
 
 coco::coco(const std::string& annotation_file) {
   std::fstream file(annotation_file);
@@ -26,7 +27,7 @@ void coco::create_index() {
   if (dataset.contains("images")) {
     for (auto& img : dataset["images"]) {
       int id = img["id"];
-      imgs[id].push_back( img);
+      imgs[id].push_back(img);
     }
   }
 
@@ -41,5 +42,14 @@ void coco::create_index() {
   std::cout << "Number of annotations: " << anns.size() << std::endl;
   std::cout << "Number of images: " << imgs.size() << std::endl;
   std::cout << "Number of categories: " << cats.size() << std::endl;
+}
+void coco::loadRes(const std::string resFile) {
+  std::fstream file(resFile);
+  std::cout << "Loading results to memory..." << std::endl;
+  json result = json::parse(file);
+  std::vector<int> annsImgIds;
+  for (const auto& ann : result) {
+    annsImgIds.push_back(ann["image_id"]);
+  }
 }
 coco::~coco() {}

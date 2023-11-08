@@ -22,4 +22,5 @@ class coco {
   ~coco();
 
   std::vector<json> get_annotations(int image_id);
+  void loadRes(const std::string resFile);
 };

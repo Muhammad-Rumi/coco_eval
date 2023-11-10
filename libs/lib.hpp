@@ -16,6 +16,8 @@ class coco {
 
   json dataset;
   void create_index();
+  float iou(const std::vector<float>& gt_bbox,
+            const std::vector<float>& dt_bbox);
 
  public:
   coco(const std::string& annotation_file);

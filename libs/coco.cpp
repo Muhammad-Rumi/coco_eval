@@ -19,7 +19,7 @@ void coco::create_index() {
 
       imgToAnns[image_id].push_back(ann);
       anns[id].push_back(ann);
-      catToImgs[category_id].push_back(image_id);
+      catToImgs[category_id].push_back(image_id);  // change type
     }
   }
 
@@ -70,14 +70,54 @@ float coco::iou(const std::vector<float>& gt_bbox,
   float iou = inter_area / union_area;
   return iou;
 }
-void coco::loadRes(const std::string resFile) {
+std::shared_ptr<coco::json coco::filter(std::shared_ptr<coco::json> original,
+                                         float thres) {
+  std::shared_ptr<coco::json> clipped = std::make_shared<coco::json>();
+
+  for (const auto& [imgId, datas] : original->items()) {
+    /* do stuff */
+    auto boundingBoxes = datas["bbox"];
+    auto scores = datas["scores"];
+    std::cout << imgId << std::endl;
+    // create a shared pointer to a new json object
+    auto clippedImageDetection = std::make_shared<json>();
+
+    // iterate over the bounding boxes and scores, adding them to the clipped
+    // image detection
+    for (size_t i = 0; i < boundingBoxes.size(); i++) {
+      if (scores[i] >= thres) {
+        clippedImageDetection->insert("bbox", boundingBoxes[i]);
+        clippedImageDetection->insert("scores", scores[i]);
+      }
+    }
+    clipped->insert(imgId,
+                    *std::static_pointer_cast<json>(clippedImageDetection));
+  }
+  return clipped;
+}
+
+void coco::evalutaion(float score_thres, float IOU_thres) {
+  std::cout << " Running pre image evaluation... " << std::endl;
+  /* for (const auto& [imgid, ann] : imgToAnns) {
+  //   std::cout << imgid << ": " << ann.size() << std::endl;
+  // }
+  for (const auto& [key, detec] : detections->items()) {
+  //   std::cout << detections->size() << ' ' << std::stoi(key) << std::endl;
+  //   break;
+  // }*/
+  assert(detections->size() == imgs.size());
+  std::cout << "detection size: " << detections->size()
+            << "\nvaliation size: " << imgToAnns.size() << std::endl;
+  std::shared_ptr<json> cliped = filter(detections, score_thres);
+}
+void coco::loadRes(const std::string resFile) {  // need to be completed.
   std::fstream file(resFile);
+  if (!file.is_open()) {
+    throw std::runtime_error("Failed to open Results file:" + resFile);
+  }
   std::cout << "Loading results to memory..." << std::endl;
   json result = json::parse(file);
-  std::vector<int> annsImgIds;
-  for (const auto& ann : result) {
-    annsImgIds.push_back(ann["image_id"]);
-  }
+  this->detections = std::make_shared<json>(result);
 }
 
 coco::~coco() {}

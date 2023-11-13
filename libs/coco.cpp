@@ -10,13 +10,17 @@ coco::coco(const std::string& annotation_file) {
 void coco::create_index() {
   std::cout << "Creating Index... " << std::endl;
   //   _vecjson ;
-
+  label temp;
+  std::vector<float> bbox;
   if (dataset.contains("annotations")) {
     for (auto& ann : dataset["annotations"]) {
       int image_id = ann["image_id"];
       int id = ann["id"];
       int category_id = ann["category_id"];
-
+      temp.bbox = EXTRACT(bbox, ann);
+      temp.catid = {static_cast<float>(EXTRACT(category_id, ann))};
+      temp.imgid = image_id;
+      gt[image_id] = temp;
       imgToAnns[image_id].push_back(ann);
       anns[id].push_back(ann);
       catToImgs[category_id].push_back(image_id);  // change type
@@ -70,15 +74,15 @@ float coco::iou(const std::vector<float>& gt_bbox,
   float iou = inter_area / union_area;
   return iou;
 }
-std::shared_ptr<coco::json> coco::filter(std::shared_ptr<json> original,
+std::shared_ptr<coco::json> coco::filter(std::shared_ptr<std::map<int, label>> original,
                                          float thres) {
   auto clipped = std::make_shared<coco::json>();
+  // std::ofstream out("test.json");
 
   for (const auto& [imgId, datas] : original->items()) {
     /* do stuff */
     auto boundingBoxes = datas["bbox"];
     auto scores = datas["scores"];
-    std::cout << imgId << std::endl;
     // create a shared pointer to a new json object
     auto clippedImageDetection = std::make_shared<json>();
 
@@ -92,6 +96,7 @@ std::shared_ptr<coco::json> coco::filter(std::shared_ptr<json> original,
     }
     clipped->push_back({imgId, *clippedImageDetection});
   }
+  // out<< *clipped;
   PRINT("filtered array", clipped->size());
   return clipped;
 }
@@ -106,9 +111,8 @@ void coco::evalutaion(float score_thres, float IOU_thres) {
   //   break;
   // }*/
   assert(detections->size() == imgs.size());
-  // std::cout << "detection size: " << detections->size()
-  //           << "\nvaliation size: " << imgToAnns.size() << std::endl;
   auto cliped = filter(detections, score_thres);
+
 }
 void coco::loadRes(const std::string resFile) {  // need to be completed.
   std::fstream file(resFile);

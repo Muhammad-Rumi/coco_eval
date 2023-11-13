@@ -17,6 +17,7 @@ void coco::create_index() {
       int image_id = ann["image_id"];
       int id = ann["id"];
       int category_id = ann["category_id"];
+      // some issue here...... check here.
       temp.bbox = {EXTRACT(bbox, bbox, ann)};
       // EXTRACT(temp.bbox, bbox, ann);
       temp.catids = {
@@ -78,7 +79,7 @@ float coco::iou(const std::vector<float>& gt_bbox,
 }
 void coco::filter(const std::shared_ptr<_map_label> original,
                   const float thres) {
-  auto clipped = std::make_shared<coco::_map_label>();
+  auto clipped = std::make_shared<_map_label>();
   // std::ofstream out("test.json");
 
   for (const auto& [imgId, datas] : *original) {
@@ -99,12 +100,12 @@ void coco::filter(const std::shared_ptr<_map_label> original,
     }
   }
   // out << clipped;
-  PRINT("filtered array", clipped->size());
-  // this->dt = std::make_shared<_map_label>(clipped);
+  // PRINT("filtered array", clipped->size());
+  this->dt = std::make_shared<_map_label>(*clipped);
   // dt.reset(clipped);
 }
 
-void coco::evalutaion(float score_thres, float IOU_thres) {
+void coco::evaluation(float score_thres, float IOU_thres) {
   std::cout << " Running pre image evaluation... " << std::endl;
   /* for (const auto& [imgid, ann] : imgToAnns) {
   //   std::cout << imgid << ": " << ann.size() << std::endl;
@@ -114,7 +115,19 @@ void coco::evalutaion(float score_thres, float IOU_thres) {
   //   break;
   // }*/
   assert(dt->size() == imgs.size());
+
   filter(dt, score_thres);
+
+  PRINT("size of dt", dt->size());
+  computeIOUs();
+}
+void coco::computeIOUs() {
+  std::vector<float> ious;
+  std::vector<float> bbox;
+  for (const auto& [g_imgId, g] : gt) {
+    for (const auto& [d_imgId, d] : *dt) {
+    }
+  }
 }
 void coco::loadRes(const std::string resFile) {  // need to be completed.
   std::fstream file(resFile);
@@ -123,19 +136,15 @@ void coco::loadRes(const std::string resFile) {  // need to be completed.
   }
   std::cout << "Loading results to memory..." << std::endl;
   json result = json::parse(file);
-  std::cout << "loaded to memory!! " << std::flush;
+  std::cout << "loaded to memory!! " << std::endl;
   label temp;
   std::map<int, label> detections;
   for (const auto& [imgid, ann] : result.items()) {
     temp.imgid = std::stoi(imgid);
-    // auto scores = temp.scores;
-    // std::vector<std::vector<float>> scores =
-    //     annss["scores"].get<std::vector<std::vector<float>>>();
     EXTRACT(temp.scores, scores, ann);
     EXTRACT(temp.bbox, bbox, ann);
     EXTRACT(temp.catids, catids, ann);
     detections[temp.imgid] = temp;
-    // PRINT("ann -> scores", annss);
   }
 
   this->dt = std::make_shared<decltype(detections)>(detections);

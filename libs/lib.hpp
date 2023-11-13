@@ -35,11 +35,12 @@ class coco {
             const std::vector<float>& dt_bbox);
   void filter(const std::shared_ptr<_map_label> original,
               const float thres = 0.5);
+    void computeIOUs();
 
  public:
   explicit coco(const std::string& annotation_file);
   ~coco();
-  void evalutaion(float score_thres, float IOU_thres);
+  void evaluation(float score_thres, float IOU_thres);
   _vecjson get_annotations(int image_id);
   void loadRes(const std::string resFile);
 };

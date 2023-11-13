@@ -38,9 +38,9 @@ void coco::create_index() {
   }
 
   // Print the size of the maps.
-  std::cout << "Number of annotations: " << anns.size() << std::endl;
-  std::cout << "Number of images: " << imgs.size() << std::endl;
-  std::cout << "Number of categories: " << cats.size() << std::endl;
+  PRINT("Number of annotations: ", anns.size());
+  PRINT("Number of images lable pair: ", gt.size());
+  PRINT("Number of categories: ", cats.size());
 }
 float coco::iou(const std::vector<float>& gt_bbox,
                 const std::vector<float>& dt_bbox) {
@@ -70,9 +70,9 @@ float coco::iou(const std::vector<float>& gt_bbox,
   float iou = inter_area / union_area;
   return iou;
 }
-std::shared_ptr<coco::json coco::filter(std::shared_ptr<coco::json> original,
+std::shared_ptr<coco::json> coco::filter(std::shared_ptr<json> original,
                                          float thres) {
-  std::shared_ptr<coco::json> clipped = std::make_shared<coco::json>();
+  auto clipped = std::make_shared<coco::json>();
 
   for (const auto& [imgId, datas] : original->items()) {
     /* do stuff */
@@ -86,13 +86,13 @@ std::shared_ptr<coco::json coco::filter(std::shared_ptr<coco::json> original,
     // image detection
     for (size_t i = 0; i < boundingBoxes.size(); i++) {
       if (scores[i] >= thres) {
-        clippedImageDetection->insert("bbox", boundingBoxes[i]);
-        clippedImageDetection->insert("scores", scores[i]);
+        clippedImageDetection->push_back({"bbox", boundingBoxes[i]});
+        clippedImageDetection->push_back({"scores", scores[i]});
       }
     }
-    clipped->insert(imgId,
-                    *std::static_pointer_cast<json>(clippedImageDetection));
+    clipped->push_back({imgId, *clippedImageDetection});
   }
+  PRINT("filtered array", clipped->size());
   return clipped;
 }
 
@@ -106,14 +106,14 @@ void coco::evalutaion(float score_thres, float IOU_thres) {
   //   break;
   // }*/
   assert(detections->size() == imgs.size());
-  std::cout << "detection size: " << detections->size()
-            << "\nvaliation size: " << imgToAnns.size() << std::endl;
-  std::shared_ptr<json> cliped = filter(detections, score_thres);
+  // std::cout << "detection size: " << detections->size()
+  //           << "\nvaliation size: " << imgToAnns.size() << std::endl;
+  auto cliped = filter(detections, score_thres);
 }
 void coco::loadRes(const std::string resFile) {  // need to be completed.
   std::fstream file(resFile);
   if (!file.is_open()) {
-    throw std::runtime_error("Failed to open Results file:" + resFile);
+    throw std::runtime_error("Failed to open file:" + resFile);
   }
   std::cout << "Loading results to memory..." << std::endl;
   json result = json::parse(file);

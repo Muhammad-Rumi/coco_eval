@@ -9,5 +9,5 @@ int main() {
 
   coco test(file);
   test.loadRes(results);
-  test.evalutaion(0.5, 0.5);
+  // test.evalutaion(0.5, 0.5);
 }

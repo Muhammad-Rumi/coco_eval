@@ -9,29 +9,33 @@
 #include <string>  // NOLINT
 #include <vector>  // NOLINT
 
-#define EXTRACT(x, J) x = J[#x].get<decltype(x)>()
+#define EXTRACT(x, k, J) x = J[#k].get<decltype(x)>()
 #define PRINT(message, variable) \
   std::cout << message << ": " << variable << std::endl
 struct label {
   int imgid;
-  std::vector<float> bbox;
-  std::vector<float> catid;
-  std::vector<float> score;
+  std::vector<std::vector<float>> bbox;
+  std::vector<float> catids;
+  std::vector<float> scores;
 };
 
 class coco {
  private:
   using json = nlohmann::json;
+  using _map_label = std::map<int, label>;
+  using _shared_map = std::shared_ptr<_map_label>;
   using _vecjson = std::vector<json>;
   json dataset;
-  std::map<int, json> anns, cats, imgs, imgToAnns, catToImgs;
-  std::map<int, label> gt;
-  std::shared_ptr<json> detections;
+  std::map<int, json> anns, cats, imgs, imgToAnns,
+      catToImgs;  //  must remove later
+  _map_label gt;
+  _shared_map dt;
   void create_index();
   float iou(const std::vector<float>& gt_bbox,
             const std::vector<float>& dt_bbox);
-std::shared_ptr<json> filter(std::shared_ptr<json> original,
-                                   float thres = 0.5);
+  void filter(const std::shared_ptr<_map_label> original,
+              const float thres = 0.5);
+
  public:
   explicit coco(const std::string& annotation_file);
   ~coco();

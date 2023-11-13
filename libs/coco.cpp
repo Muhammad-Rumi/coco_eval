@@ -17,8 +17,10 @@ void coco::create_index() {
       int image_id = ann["image_id"];
       int id = ann["id"];
       int category_id = ann["category_id"];
-      temp.bbox = EXTRACT(bbox, ann);
-      temp.catid = {static_cast<float>(EXTRACT(category_id, ann))};
+      temp.bbox = {EXTRACT(bbox, bbox, ann)};
+      // EXTRACT(temp.bbox, bbox, ann);
+      temp.catids = {
+          static_cast<float>(EXTRACT(category_id, category_id, ann))};
       temp.imgid = image_id;
       gt[image_id] = temp;
       imgToAnns[image_id].push_back(ann);
@@ -74,31 +76,32 @@ float coco::iou(const std::vector<float>& gt_bbox,
   float iou = inter_area / union_area;
   return iou;
 }
-std::shared_ptr<coco::json> coco::filter(std::shared_ptr<std::map<int, label>> original,
-                                         float thres) {
-  auto clipped = std::make_shared<coco::json>();
+void coco::filter(const std::shared_ptr<_map_label> original,
+                  const float thres) {
+  auto clipped = std::make_shared<coco::_map_label>();
   // std::ofstream out("test.json");
 
-  for (const auto& [imgId, datas] : original->items()) {
+  for (const auto& [imgId, datas] : *original) {
     /* do stuff */
-    auto boundingBoxes = datas["bbox"];
-    auto scores = datas["scores"];
-    // create a shared pointer to a new json object
-    auto clippedImageDetection = std::make_shared<json>();
+    auto boundingBoxes = datas.bbox;
+    auto scores = datas.scores;
+    auto catids = datas.catids;
+    // PRINT("keys", catids);
 
     // iterate over the bounding boxes and scores, adding them to the clipped
     // image detection
     for (size_t i = 0; i < boundingBoxes.size(); i++) {
       if (scores[i] >= thres) {
-        clippedImageDetection->push_back({"bbox", boundingBoxes[i]});
-        clippedImageDetection->push_back({"scores", scores[i]});
+        clipped->operator[](imgId).bbox.push_back(boundingBoxes[i]);
+        clipped->operator[](imgId).catids.push_back(catids[i]);
+        clipped->operator[](imgId).scores.push_back(scores[i]);
       }
     }
-    clipped->push_back({imgId, *clippedImageDetection});
   }
-  // out<< *clipped;
+  // out << clipped;
   PRINT("filtered array", clipped->size());
-  return clipped;
+  // this->dt = std::make_shared<_map_label>(clipped);
+  // dt.reset(clipped);
 }
 
 void coco::evalutaion(float score_thres, float IOU_thres) {
@@ -110,9 +113,8 @@ void coco::evalutaion(float score_thres, float IOU_thres) {
   //   std::cout << detections->size() << ' ' << std::stoi(key) << std::endl;
   //   break;
   // }*/
-  assert(detections->size() == imgs.size());
-  auto cliped = filter(detections, score_thres);
-
+  assert(dt->size() == imgs.size());
+  filter(dt, score_thres);
 }
 void coco::loadRes(const std::string resFile) {  // need to be completed.
   std::fstream file(resFile);
@@ -121,7 +123,22 @@ void coco::loadRes(const std::string resFile) {  // need to be completed.
   }
   std::cout << "Loading results to memory..." << std::endl;
   json result = json::parse(file);
-  this->detections = std::make_shared<json>(result);
+  std::cout << "loaded to memory!! " << std::flush;
+  label temp;
+  std::map<int, label> detections;
+  for (const auto& [imgid, ann] : result.items()) {
+    temp.imgid = std::stoi(imgid);
+    // auto scores = temp.scores;
+    // std::vector<std::vector<float>> scores =
+    //     annss["scores"].get<std::vector<std::vector<float>>>();
+    EXTRACT(temp.scores, scores, ann);
+    EXTRACT(temp.bbox, bbox, ann);
+    EXTRACT(temp.catids, catids, ann);
+    detections[temp.imgid] = temp;
+    // PRINT("ann -> scores", annss);
+  }
+
+  this->dt = std::make_shared<decltype(detections)>(detections);
 }
 
 coco::~coco() {}

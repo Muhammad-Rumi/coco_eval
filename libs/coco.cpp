@@ -10,7 +10,7 @@ coco::coco(const std::string& annotation_file) {
 void coco::create_index() {
   std::cout << "Creating Index... " << std::endl;
   //   _vecjson ;
-  label temp;
+  // label temp;
   std::vector<float> bbox;
   if (dataset.contains("annotations")) {
     for (auto& ann : dataset["annotations"]) {
@@ -18,12 +18,15 @@ void coco::create_index() {
       int id = ann["id"];
       int category_id = ann["category_id"];
       // some issue here...... check here.
-      temp.bbox = {EXTRACT(bbox, bbox, ann)};
+      // temp.bbox = {EXTRACT(bbox, bbox, ann)};
       // EXTRACT(temp.bbox, bbox, ann);
-      temp.catids = {
-          static_cast<float>(EXTRACT(category_id, category_id, ann))};
-      temp.imgid = image_id;
-      gt[image_id] = temp;
+      // temp.catids = {
+      // static_cast<float>(EXTRACT(category_id, category_id, ann))};
+      // temp.imgid = image_id;
+      gt[image_id].bbox.push_back(EXTRACT(bbox, bbox, ann));
+      gt[image_id].imgid = image_id;
+      gt[image_id].catids.push_back(
+          static_cast<float>(EXTRACT(category_id, category_id, ann)));
       imgToAnns[image_id].push_back(ann);
       anns[id].push_back(ann);
       catToImgs[category_id].push_back(image_id);  // change type
@@ -48,6 +51,10 @@ void coco::create_index() {
   PRINT("Number of annotations: ", anns.size());
   PRINT("Number of images lable pair: ", gt.size());
   PRINT("Number of categories: ", cats.size());
+  // for (const auto& [id, datas] : gt) {
+  //   PRINT("Image id", id);
+  //   PRINT("gor every img bbox size: ", datas.bbox.size());
+  // }
 }
 float coco::iou(const std::vector<float>& gt_bbox,
                 const std::vector<float>& dt_bbox) {

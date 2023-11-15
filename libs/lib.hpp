@@ -12,10 +12,14 @@
 #define EXTRACT(x, k, J) x = J[#k].get<decltype(x)>()
 #define PRINT(message, variable) \
   std::cout << message << ": " << variable << std::endl
+
+struct point {
+  float x, y;
+};
 struct label {
   int imgid;
   std::vector<std::vector<float>> bbox;
-  std::vector<float> catids;
+  std::vector<int> catids;
   std::vector<float> scores;
 };
 
@@ -26,8 +30,8 @@ class coco {
   using _shared_map = std::shared_ptr<_map_label>;
   using _vecjson = std::vector<json>;
   json dataset;
-  std::map<int, json> anns, cats, imgs, imgToAnns,
-      catToImgs;  //  must remove later
+  std::map<int, json> anns, cats, imgs, imgToAnns;
+  std::map<int, std::vector<int>> catToImgs;  //  must remove later
   _map_label gt, dt;
   // dt-> bbox must be sorted in decending order for scores values.
   // _shared_map dt;
@@ -36,12 +40,13 @@ class coco {
             const std::vector<float>& dt_bbox);
   void filter(const std::shared_ptr<_map_label> original,
               const float thres = 0.5);
-    void computemAP(float thres);
+  void precision_recall(const std::vector<float> thres);
+  float computemAP(float thres);
 
  public:
   explicit coco(const std::string& annotation_file);
   ~coco();
-  void evaluation(float score_thres, float IOU_thres);
+  void evaluation(const float* IOU_range);
   _vecjson get_annotations(int image_id);
   // void loadRes(const std::string resFile);
   void loadRes(const std::string resFile, std::string flag);

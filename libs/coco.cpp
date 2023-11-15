@@ -16,11 +16,11 @@ void coco::create_index() {
     for (auto& ann : dataset["annotations"]) {
       int image_id = ann["image_id"];
       int id = ann["id"];
-
+      EXTRACT(category_id, category_id, ann);
       gt[image_id].bbox.push_back(EXTRACT(bbox, bbox, ann));
       gt[image_id].imgid = image_id;
-      gt[image_id].catids.push_back(
-          static_cast<float>(EXTRACT(category_id, category_id, ann)));
+      gt[image_id].catids.push_back(category_id);
+      catToImgs[category_id].push_back(image_id);
     }
   }
 
@@ -41,7 +41,7 @@ void coco::create_index() {
   // Print the size of the maps.
   // PRINT("Number of annotations: ", anns.size());
   PRINT("Number of images lable pair: ", gt.size());
-  PRINT("Number of categories: ", cats.size());
+  PRINT("Number of categories: ", catToImgs.size());
   // for (const auto& [id, datas] : gt) {
   //   PRINT("Image id", id);
   //   PRINT("gor every img bbox size: ", datas.bbox.size());
@@ -96,22 +96,48 @@ float coco::iou(const std::vector<float>& gt_bbox,
 //     // PRINT("filtered array", clipped->size());
 //     dt = clipped;
 // }
-
-void coco::evaluation(float score_thres, float IOU_thres) {
+void coco::precision_recall(const std::vector<float> thres) {
+  float mAP = 0;
+  std::vector<float> truePos(90), falsePos(90), falseNeg(90);
+  for (const auto& [catId, imgIds] : catToImgs) {
+    float AP = 0;
+    for (const auto& imgId : imgIds) {
+      auto detection_ann = dt.find(imgId);
+      auto ground_ann = gt.find(imgId);
+      if (ground_ann == gt.end()) {
+        continue;
+      }
+    }
+  }
+}
+void coco::evaluation(const float* IOU_range) {
   assert(dt.size() == imgs.size());
+  int rng = (IOU_range[1] - IOU_range[0]) / IOU_range[2];
+  std::vector<float> iouThrs(rng);
 
+  std::generate_n(iouThrs.begin(), iouThrs.size(), [IOU_range]() {
+    static float iouThreshold = IOU_range[0] - IOU_range[2];
+    iouThreshold += IOU_range[2];
+    return iouThreshold;
+  });
+  std::vector<int> keys;
+
+  std::transform(catToImgs.begin(), catToImgs.end(), std::back_inserter(keys),
+                 [](const auto& pair) { return pair.first; });
+  auto it = std::max_element(keys.begin(), keys.end());
+  PRINT("Max catid", *it);
   // filter(dt, score_thres); // using the fact that the data is already sorted.
 
   // PRINT("size of dt", dt->size());
-  computemAP(IOU_thres);
+  // computemAP(IOU_thres);
 }
-void coco::computemAP(float thres) {
+float coco::computemAP(float thres) {  // will have to change.
   std::cout << "Computing IOUs for every detection to ground truth"
             << std::endl;
   // std::map<std::pair<int, float>, std::vector<float>> ious;
-  double mAP = 0;
+  float mAP = 0;
   for (const auto& [d_imgId, d] : dt) {
-    double AP = 0;
+    float AP = 0;
     auto g = gt.find(d_imgId);
     if (g == gt.end()) {
       continue;
@@ -138,6 +164,7 @@ void coco::computemAP(float thres) {
   PRINT("mAP", mAP * 100);
   // PRINT("IOus with unique labels", ious.size());
   PRINT("Completed IOU calculation", "");
+  return mAP;
 }
 
 void coco::loadRes(const std::string resFile,

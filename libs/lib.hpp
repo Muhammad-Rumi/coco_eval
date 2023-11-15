@@ -43,5 +43,6 @@ class coco {
   ~coco();
   void evaluation(float score_thres, float IOU_thres);
   _vecjson get_annotations(int image_id);
-  void loadRes(const std::string resFile);
+  // void loadRes(const std::string resFile);
+  void loadRes(const std::string resFile, std::string flag);
 };

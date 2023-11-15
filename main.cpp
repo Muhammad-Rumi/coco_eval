@@ -3,9 +3,11 @@
 #include "lib.hpp"          // NOLINT
 
 int main(int argc, char* argv[]) {
-  if (argc != 3) {
+  if (argc != 5) {
     std::cerr << "Usage:" << argv[0]
-              << " requires <score_threshold> <IOU_threshold>" << std::endl;
+              << " requires <score_threshold> <IOU_threshold> <inference mode "
+                 "float/int> <dataset path>"
+              << std::endl;
     return -1;
   }
   const std::string file = "dataset/instances_val2017.json";
@@ -13,6 +15,6 @@ int main(int argc, char* argv[]) {
   const std::string model = "model/efficientdet-lite1.onnx";
 
   coco test(file);
-  test.loadRes(results);
+  test.loadRes(argv[4], argv[3]);
   test.evaluation(std::stof(argv[1]), std::stof(argv[2]));
 }

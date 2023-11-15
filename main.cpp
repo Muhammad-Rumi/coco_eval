@@ -3,9 +3,10 @@
 #include "lib.hpp"          // NOLINT
 
 int main(int argc, char* argv[]) {
-  if (argc != 5) {
+  if (argc != 6) {
     std::cerr << "Usage:" << argv[0]
-              << " requires <score_threshold> <IOU_threshold> <inference mode "
+              << " requires <IOU_thres start range> <IOU_thres end range> "
+                 "<IOU_thres step> <inference mode "
                  "float/int> <dataset path>"
               << std::endl;
     return -1;
@@ -15,6 +16,8 @@ int main(int argc, char* argv[]) {
   const std::string model = "model/efficientdet-lite1.onnx";
 
   coco test(file);
-  test.loadRes(argv[4], argv[3]);
-  test.evaluation(std::stof(argv[1]), std::stof(argv[2]));
+  test.loadRes(argv[5], argv[4]);
+  float iourange[] = {std::stof(argv[1]), std::stof(argv[2]),
+                      std::stof(argv[3])};
+  test.evaluation(iourange);
 }

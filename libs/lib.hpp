@@ -40,7 +40,7 @@ class coco {
             const std::vector<float>& dt_bbox);
   void filter(const std::shared_ptr<_map_label> original,
               const float thres = 0.5);
-  void precision_recall(const std::vector<float> thres);
+  void precision_recall(const std::vector<float>& thres);
   float computemAP(float thres);
 
  public:

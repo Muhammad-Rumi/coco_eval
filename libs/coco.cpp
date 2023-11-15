@@ -96,17 +96,34 @@ float coco::iou(const std::vector<float>& gt_bbox,
 //     // PRINT("filtered array", clipped->size());
 //     dt = clipped;
 // }
-void coco::precision_recall(const std::vector<float> thres) {
+void coco::precision_recall(const std::vector<float>& thres) {
   float mAP = 0;
-  std::vector<float> truePos(90), falsePos(90), falseNeg(90);
+  std::vector<int> truePos(90), total_gt(90), total_dt(90);
   for (const auto& [catId, imgIds] : catToImgs) {
-    float AP = 0;
+    int TP = 0, gt_percat = 0, dt_percat = 0;
     for (const auto& imgId : imgIds) {
       auto detection_ann = dt.find(imgId);
       auto ground_ann = gt.find(imgId);
       if (ground_ann == gt.end()) {
         continue;
       }
+      for (int i = 0; i < ground_ann->second.bbox.size(); ++i) {
+        std::vector<float> io;
+        auto a = ground_ann->second.bbox[i];  // can add another filter by catid
+        std::transform(detection_ann->second.bbox.begin(),
+                       detection_ann->second.bbox.end(), std::back_inserter(io),
+                       [this, a, thres](std::vector<float> b) {
+                         return coco::iou(a, b) > thres[0];
+                       });
+        TP += std::accumulate(io.begin(), io.end(), 0.0f);
+        gt_percat += ground_ann->second.catids.size();
+        dt_percat += io.size();
+        // PRINT("Size of IOus", io.size());
+        // ious[std::make_pair(d_imgId, g->second.catids[i])] = io;
+      }
+      truePos[catId] = TP;
+      total_dt[catId] = dt_percat;
+      total_gt[catId] = gt_percat;
     }
   }
 }
@@ -120,12 +137,14 @@ void coco::evaluation(const float* IOU_range) {
     iouThreshold += IOU_range[2];
     return iouThreshold;
   });
-  std::vector<int> keys;
+  precision_recall(iouThrs);
+  // std::vector<int> keys;
 
-  std::transform(catToImgs.begin(), catToImgs.end(), std::back_inserter(keys),
-                 [](const auto& pair) { return pair.first; });
-  auto it = std::max_element(keys.begin(), keys.end());
-  PRINT("Max catid", *it);
+  // std::transform(catToImgs.begin(), catToImgs.end(),
+  // std::back_inserter(keys),
+  //                [](const auto& pair) { return pair.first; });
+  // auto it = std::max_element(keys.begin(), keys.end());
+  // PRINT("Max catid", *it);
   // filter(dt, score_thres); // using the fact that the data is already sorted.
 
   // PRINT("size of dt", dt->size());

@@ -65,6 +65,9 @@ float coco::iou(const std::vector<float>& gt_bbox,
   ouput:
   float iou;
   */
+  // PRINT("gt_bbox", gt_bbox.size());
+  // PRINT("dt_bbox", dt_bbox.size());
+  assert(gt_bbox.size() == 4 && dt_bbox.size() == 4);
   float area_gt = (gt_bbox[2] - gt_bbox[0]) *
                   (gt_bbox[1] - gt_bbox[3]);  // ymax - ymin * xmax -xmin
   float area_dt = (dt_bbox[2] - dt_bbox[0]) * (dt_bbox[1] - dt_bbox[3]);
@@ -75,9 +78,11 @@ float coco::iou(const std::vector<float>& gt_bbox,
 
   std::vector<float> lower_right;
   std::transform(gt_bbox.begin() + 2, gt_bbox.end(), dt_bbox.begin() + 2,
-                 std::back_inserter(upper_left),
+                 std::back_inserter(lower_right),
                  [](float a, float b) { return std::min(a, b); });
   assert(upper_left.size() == 2 && lower_right.size() == 2);
+  // PRINT("upper_left size", upper_left.size());
+  // PRINT("lower right size", lower_right.size());
   float inter_area =
       (lower_right[0] - upper_left[0]) * (lower_right[1] - upper_left[1]);
   float union_area = area_dt + area_gt - inter_area;
@@ -113,28 +118,60 @@ void coco::filter(const std::shared_ptr<_map_label> original,
 }
 
 void coco::evaluation(float score_thres, float IOU_thres) {
-  std::cout << " Running pre image evaluation... " << std::endl;
-  /* for (const auto& [imgid, ann] : imgToAnns) {
-  //   std::cout << imgid << ": " << ann.size() << std::endl;
-  // }
-  for (const auto& [key, detec] : detections->items()) {
-  //   std::cout << detections->size() << ' ' << std::stoi(key) << std::endl;
-  //   break;
-  // }*/
   assert(dt->size() == imgs.size());
 
-  filter(dt, score_thres);
+  // filter(dt, score_thres); // using the fact that the data is already sorted.
 
   PRINT("size of dt", dt->size());
-  computeIOUs();
+  computemAP();
 }
-void coco::computeIOUs() {
-  std::vector<float> ious;
-  std::vector<float> bbox;
-  for (const auto& [g_imgId, g] : gt) {
-    for (const auto& [d_imgId, d] : *dt) {
+void coco::computemAP() {
+  std::cout << "Computing IOUs for every detection to ground truth"
+            << std::endl;
+  // std::vector<float> ious;
+  std::map<std::pair<int, float>, std::vector<float>> ious;
+  float check = 0;
+  // std::vector<float> bbox;
+  int j = 0;
+  double mAP = 0;
+  for (const auto& [d_imgId, d] : *dt) {
+    double AP = 0;
+    auto g = gt.find(d_imgId);
+    // int i = 0;
+    if (g != gt.end()) {
+      for (int i = 0; i < g->second.bbox.size(); ++i) {
+        std::vector<float> io;
+        const auto& a = g->second.bbox[i];  // can add another filter by catid
+        /*for (size_t b = 0; b < d.bbox.size(); ++b) {
+          if (g.catids[i] != d.catids[b]) {
+            // io.push_back(0);
+            continue;
+          }
+          io.push_back(coco::iou(a, d.bbox[b]));
+        }*/
+
+        std::transform(d.bbox.begin(), d.bbox.end(), std::back_inserter(io),
+                       [this, a](std::vector<float> b) {
+                         return coco::iou(a, b) > 0.5;
+                       });  // 0.5 being the IOU threshold.
+        AP += std::accumulate(io.begin(), io.end(), 0.0f) / io.size();
+        // PRINT("Size of IOus", io.size());
+        check++;
+        ious[std::make_pair(d_imgId, g->second.catids[i])] = io;
+      }
+    } else {
+      continue;
     }
+
+    AP = AP / g->second.catids.size();
+    mAP += AP;
+    // PRINT("catids sizes for every image", g.catids.size());
+    ++j;
+    // break;
   }
+  PRINT("mAP", mAP/5000 * 100);
+  PRINT("IOus with unique labels", ious.size());
+  PRINT("Completed IOU calculation", "");
 }
 void coco::loadRes(const std::string resFile) {  // need to be completed.
   std::fstream file(resFile);

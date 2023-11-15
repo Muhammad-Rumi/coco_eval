@@ -29,13 +29,14 @@ class coco {
   std::map<int, json> anns, cats, imgs, imgToAnns,
       catToImgs;  //  must remove later
   _map_label gt;
+  // dt-> bbox must be sorted in decending order for scores values.
   _shared_map dt;
   void create_index();
   float iou(const std::vector<float>& gt_bbox,
             const std::vector<float>& dt_bbox);
   void filter(const std::shared_ptr<_map_label> original,
               const float thres = 0.5);
-    void computeIOUs();
+    void computemAP();
 
  public:
   explicit coco(const std::string& annotation_file);

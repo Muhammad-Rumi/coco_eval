@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
     return -1;
   }
   const std::string file = "dataset/instances_val2017.json";
-  const std::string results = "dataset/data.json";
+  const std::string results = "dataset/detection_truth.json";
   const std::string model = "model/efficientdet-lite1.onnx";
 
   coco test(file);

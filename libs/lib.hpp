@@ -12,6 +12,7 @@
 #define EXTRACT(x, k, J) x = J[#k].get<decltype(x)>()
 #define PRINT(message, variable) \
   std::cout << message << ": " << variable << std::endl
+#define SEPARATOR std::cout << "-------------------------------" << std::endl
 struct label {
   int imgid;
   std::vector<std::vector<float>> bbox;
@@ -26,17 +27,13 @@ class coco {
   using _shared_map = std::shared_ptr<_map_label>;
   using _vecjson = std::vector<json>;
   json dataset;
-  std::map<int, json> anns, cats, imgs, imgToAnns,
-      catToImgs;  //  must remove later
   _map_label gt, dt;
-  // dt-> bbox must be sorted in decending order for scores values.
-  // _shared_map dt;
   void create_index();
   float iou(const std::vector<float>& gt_bbox,
             const std::vector<float>& dt_bbox);
   void filter(const std::shared_ptr<_map_label> original,
               const float thres = 0.5);
-    void computemAP(float thres);
+  void computemAP(float thres);
 
  public:
   explicit coco(const std::string& annotation_file);

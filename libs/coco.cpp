@@ -23,29 +23,9 @@ void coco::create_index() {
           static_cast<float>(EXTRACT(category_id, category_id, ann)));
     }
   }
-
-  if (dataset.contains("images")) {
-    for (auto& img : dataset["images"]) {
-      int id = img["id"];
-      imgs[id].push_back(img);
-    }
-  }
-
-  if (dataset.contains("categories")) {
-    for (auto& cat : dataset["categories"]) {
-      int id = cat["id"];
-      cats[id] = cat;
-    }
-  }
-
   // Print the size of the maps.
-  // PRINT("Number of annotations: ", anns.size());
   PRINT("Number of images lable pair: ", gt.size());
-  PRINT("Number of categories: ", cats.size());
-  // for (const auto& [id, datas] : gt) {
-  //   PRINT("Image id", id);
-  //   PRINT("gor every img bbox size: ", datas.bbox.size());
-  // }
+  SEPARATOR;
 }
 float coco::iou(const std::vector<float>& gt_bbox,
                 const std::vector<float>& dt_bbox) {
@@ -98,7 +78,7 @@ float coco::iou(const std::vector<float>& gt_bbox,
 // }
 
 void coco::evaluation(float score_thres, float IOU_thres) {
-  assert(dt.size() == imgs.size());
+  // assert(dt.size() == imgs.size());
 
   // filter(dt, score_thres); // using the fact that the data is already sorted.
 
@@ -137,7 +117,7 @@ void coco::computemAP(float thres) {
   mAP /= dt.size();
   PRINT("mAP", mAP * 100);
   // PRINT("IOus with unique labels", ious.size());
-  PRINT("Completed IOU calculation", "");
+  SEPARATOR;
 }
 
 void coco::loadRes(const std::string resFile,
@@ -148,7 +128,6 @@ void coco::loadRes(const std::string resFile,
   }
   std::cout << "Loading results to memory..." << std::endl;
   json result = json::parse(file);
-  std::cout << "loaded to memory!! " << std::endl;
 
   if (flag == "float") {
     label temp;
@@ -175,7 +154,7 @@ void coco::loadRes(const std::string resFile,
       dt[imgId].scores.push_back(EXTRACT(score, score, ann));
     }
   }
-
+  SEPARATOR;
   // dt = detections;
 }
 coco::~coco() {}

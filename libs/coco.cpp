@@ -139,29 +139,7 @@ void coco::computemAP(float thres) {
   // PRINT("IOus with unique labels", ious.size());
   PRINT("Completed IOU calculation", "");
 }
-// void coco::loadRes(const std::string resFile) {
-//   std::fstream file(resFile);
-//   if (!file.is_open()) {
-//     throw std::runtime_error("Failed to open file:" + resFile);
-//   }
-//   std::cout << "Loading results to memory..." << std::endl;
-//   json result = json::parse(file);
-//   std::cout << "loaded to memory!! " << std::endl;
-//   label temp;
-//   std::map<int, label> detections;
-//   std::vector<float> bbox;
-//   int category_id;
-//   float score;
-//   std::cout << "Processing... " << std::endl;
-//   for (const auto& ann : result) {
-//     int imgId = ann["image_id"];
-//     // auto scores = ann["score"];
-//     dt[imgId].bbox.push_back(EXTRACT(bbox, bbox, ann));
-//     dt[imgId].imgid = imgId;
-//     dt[imgId].catids.push_back(EXTRACT(category_id, category_id, ann));
-//     dt[imgId].scores.push_back(EXTRACT(score, score, ann));
-//   }
-// }
+
 void coco::loadRes(const std::string resFile,
                    std::string flag) {  // need to be completed.
   std::fstream file(resFile);

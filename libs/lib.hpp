@@ -12,6 +12,7 @@
 #define EXTRACT(x, k, J) x = J[#k].get<decltype(x)>()
 #define PRINT(message, variable) \
   std::cout << message << ": " << variable << std::endl
+#define SEPARATOR std::cout << "-------------------------------" << std::endl
 
 struct point {
   float x, y;
@@ -33,8 +34,6 @@ class coco {
   std::map<int, json> anns, cats, imgs, imgToAnns;
   std::map<int, std::vector<int>> catToImgs;  //  must remove later
   _map_label gt, dt;
-  // dt-> bbox must be sorted in decending order for scores values.
-  // _shared_map dt;
   void create_index();
   float iou(const std::vector<float>& gt_bbox,
             const std::vector<float>& dt_bbox);

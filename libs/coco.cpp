@@ -23,24 +23,9 @@ void coco::create_index() {
       catToImgs[category_id].push_back(image_id);
     }
   }
-
-  if (dataset.contains("images")) {
-    for (auto& img : dataset["images"]) {
-      int id = img["id"];
-      imgs[id].push_back(img);
-    }
-  }
-
-  if (dataset.contains("categories")) {
-    for (auto& cat : dataset["categories"]) {
-      int id = cat["id"];
-      cats[id] = cat;
-    }
-  }
-
   // Print the size of the maps.
-  // PRINT("Number of annotations: ", anns.size());
   PRINT("Number of images lable pair: ", gt.size());
+  SEPARATOR;
   PRINT("Number of categories: ", catToImgs.size());
   // for (const auto& [id, datas] : gt) {
   //   PRINT("Image id", id);
@@ -182,7 +167,7 @@ float coco::computemAP(float thres) {  // will have to change.
   mAP /= dt.size();
   PRINT("mAP", mAP * 100);
   // PRINT("IOus with unique labels", ious.size());
-  PRINT("Completed IOU calculation", "");
+  SEPARATOR;
   return mAP;
 }
 
@@ -194,7 +179,6 @@ void coco::loadRes(const std::string resFile,
   }
   std::cout << "Loading results to memory..." << std::endl;
   json result = json::parse(file);
-  std::cout << "loaded to memory!! " << std::endl;
 
   if (flag == "float") {
     label temp;
@@ -221,7 +205,7 @@ void coco::loadRes(const std::string resFile,
       dt[imgId].scores.push_back(EXTRACT(score, score, ann));
     }
   }
-
+  SEPARATOR;
   // dt = detections;
 }
 coco::~coco() {}

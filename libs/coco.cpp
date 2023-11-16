@@ -82,24 +82,28 @@ float coco::iou(const std::vector<float>& gt_bbox,
 //     dt = clipped;
 // }
 void coco::precision_recall(const std::vector<float>& thres) {
+  std::cout << "Calculating precision recall" << std::endl;
   float mAP = 0;
-  std::vector<int> truePos(90), total_gt(90), total_dt(90);
+  std::vector<int> truePos(91), total_gt(91), total_dt(91);
   for (const auto& [catId, imgIds] : catToImgs) {
     int TP = 0, gt_percat = 0, dt_percat = 0;
     for (const auto& imgId : imgIds) {
-      auto detection_ann = dt.find(imgId);
-      auto ground_ann = gt.find(imgId);
+      const auto& detection_ann = dt.find(imgId);
+      const auto& ground_ann = gt.find(imgId);
       if (ground_ann == gt.end()) {
         continue;
       }
+      // std::cout << "iterating over bboxes" << std::endl;
       for (int i = 0; i < ground_ann->second.bbox.size(); ++i) {
         std::vector<float> io;
         auto a = ground_ann->second.bbox[i];  // can add another filter by catid
-        std::transform(detection_ann->second.bbox.begin(),
-                       detection_ann->second.bbox.end(), std::back_inserter(io),
-                       [this, a, thres](std::vector<float> b) {
-                         return coco::iou(a, b) > thres[0];
-                       });
+        std::transform(
+            detection_ann->second.bbox.begin(),
+            detection_ann->second.bbox.end(), std::back_inserter(io),
+            [this, a, thres](std::vector<float> b) {
+              return coco::iou(a, b) >
+                     thres[0];  // left to iterate over the thresholds
+            });
         TP += std::accumulate(io.begin(), io.end(), 0.0f);
         gt_percat += ground_ann->second.catids.size();
         dt_percat += io.size();
@@ -110,7 +114,8 @@ void coco::precision_recall(const std::vector<float>& thres) {
       total_dt[catId] = dt_percat;
       total_gt[catId] = gt_percat;
     }
-  }
+    }
+  zero_count(truePos);
 }
 void coco::evaluation(const float* IOU_range) {
   assert(dt.size() == imgs.size());

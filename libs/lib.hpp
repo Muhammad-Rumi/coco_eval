@@ -50,3 +50,24 @@ class coco {
   // void loadRes(const std::string resFile);
   void loadRes(const std::string resFile, std::string flag);
 };
+void zero_loc(
+    const std::vector<int>& myVector) {  // works for only sorted vectors, sad!!
+  std::vector<int> tempVector = myVector;
+  std::vector<int>::iterator lower =
+      std::lower_bound(tempVector.begin(), tempVector.end(), 5);
+  std::vector<int>::iterator upper =
+      std::upper_bound(tempVector.begin(), tempVector.end(), 5);
+
+  for (std::vector<int>::iterator it = lower; it != upper; ++it) {
+    std::cout << "Zero found at index: " << it - tempVector.begin()
+              << std::endl;
+  }
+}
+void zero_count(const std::vector<int>& myVector) {
+  int zeroCount = std::count_if(myVector.begin(), myVector.end(),
+                                [](int x) { return x == 0; });
+  std::cout << "Number of zeros: " << zeroCount << std::endl;
+  for (auto&& i : myVector) {
+    std::cout << i << std::endl;
+  }
+}

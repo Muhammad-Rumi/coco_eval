@@ -18,7 +18,7 @@ struct point {
   _T x;
   _Y y;
   friend std::ostream& operator<<(std::ostream& os, const point& p) {
-    return os << "mAP: " << p.x << ", mRc: " << p.y << ")";
+    return os << "mAP: " << p.x << ", mRc: " << p.y;
   }
 };
 struct Key {
@@ -45,6 +45,7 @@ struct label {
   std::vector<int> catids;
   std::vector<float> scores;
 };
+
 template <typename _t, typename _y, typename _r>
 struct table {
   static int inst;
@@ -53,21 +54,21 @@ struct table {
   _y total_gt;
   _r total_dt;
   explicit table(const int& size) {
-    inst = size;
+    // inst = size;
     id = -1, id1 = -1, id2 = -1;
     truePos.resize(size);
     total_gt.resize(size);
     total_dt.resize(size);
   }
   table(const _t& tp, const _y& tg, const _r& td) {
-    inst = 0;
+    inst++;
     id = -1, id1 = -1, id2 = -1;
     truePos = tp;
     total_gt = tg;
     total_dt = td;
   }
   table() {
-    inst = 0;
+    // inst++;
     id = -1, id1 = -1, id2 = -1;
   }
 };

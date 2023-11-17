@@ -1,6 +1,9 @@
 
 #include "lib.hpp"  // NOLINT
 
+template <typename _t, typename _y, typename _r>
+int table<_t, _y, _r>::inst = 0;
+
 coco::coco(const std::string& annotation_file) {
   std::fstream file(annotation_file);
   std::cout << "Loading annnotations to memory..." << std::endl;
@@ -56,7 +59,7 @@ float coco::iou(const std::vector<float>& gt_bbox,
   return intersection_area / (area1 + area2 - intersection_area);
 }
 coco::_per_img_cat coco::calculate_confusion(const float& thres) {
-    _per_img_cat test;
+  _per_img_cat test;
   for (const auto& [imgId, d] : dt) {
     const auto& ground_ann = gt.find(imgId);
     if (ground_ann == gt.end()) {
@@ -77,7 +80,6 @@ coco::_per_img_cat coco::calculate_confusion(const float& thres) {
       dt_per_img_cat = io.size();
       //
       _table_scaler confusion_mat(0, 0, 0);  // per image tp fp fn;
-      confusion_mat.inst++;
       confusion_mat.truePos = TP;
       confusion_mat.total_dt = dt_per_img_cat;
       confusion_mat.total_gt = gt_per_img_cat;
@@ -105,14 +107,15 @@ coco::_processed_vla coco::precision_recall(const std::vector<float>& thres) {
     // per image per category
     for (const auto& [key, value] : curr_confusion) {
       float recall = 0, precision = 0;
+      float len = value.size();
       for (auto&& per_img_cat : value) {
         if (per_img_cat.truePos == 0) continue;
         recall += per_img_cat.truePos / per_img_cat.total_gt;
         precision += per_img_cat.truePos / per_img_cat.total_dt;
         inst = per_img_cat.inst;
       }
-      avg_recall += recall / inst;
-      avg_precision += precision / inst;
+      avg_recall += recall / len;
+      avg_precision += precision / len;
     }
     // PRINT("Categories", catsize);
     // recall
@@ -135,6 +138,7 @@ coco::_processed_vla coco::precision_recall(const std::vector<float>& thres) {
     // zero_count(curr_confusion.total_dt);
   }
   PRINT("best IOU threshold", process_values.x);
+  PRINT("size:", dt.size());
   SEPARATOR;
   return process_values;
 }

@@ -17,6 +17,9 @@ template <typename _T, typename _Y>
 struct point {
   _T x;
   _Y y;
+  friend std::ostream& operator<<(std::ostream& os, const point& p) {
+    return os << "mAP: " << p.x << ", mRc: " << p.y << ")";
+  }
 };
 struct Key {
   int imgId;
@@ -37,7 +40,7 @@ struct Key {
 };
 
 struct label {
-  int  imgid, len;
+  int imgid, len;
   std::vector<std::vector<float>> bbox;
   std::vector<int> catids;
   std::vector<float> scores;

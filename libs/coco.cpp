@@ -56,8 +56,7 @@ float coco::iou(const std::vector<float>& gt_bbox,
   return intersection_area / (area1 + area2 - intersection_area);
 }
 coco::_per_img_cat coco::calculate_confusion(const float& thres) {
-  _table_scaler confusion_mat(0, 0, 0);  // per image tp fp fn;
-  _per_img_cat test;
+    _per_img_cat test;
   for (const auto& [imgId, d] : dt) {
     const auto& ground_ann = gt.find(imgId);
     if (ground_ann == gt.end()) {
@@ -77,6 +76,7 @@ coco::_per_img_cat coco::calculate_confusion(const float& thres) {
       gt_per_img_cat = ground_ann->second.catids.size();
       dt_per_img_cat = io.size();
       //
+      _table_scaler confusion_mat(0, 0, 0);  // per image tp fp fn;
       confusion_mat.inst++;
       confusion_mat.truePos = TP;
       confusion_mat.total_dt = dt_per_img_cat;
@@ -98,24 +98,28 @@ coco::_processed_vla coco::precision_recall(const std::vector<float>& thres) {
   for (auto& ith_thres : thres) {
     PRINT("current threshold", ith_thres);
     auto curr_confusion = calculate_confusion(ith_thres);
-    PRINT("size of map", curr_confusion.size());
+    // PRINT("size of map", curr_confusion.size());
     point<float, float> precision_recall;  // x will have recall
-    int catsize = 5000;
-    float recall = 0, precision = 0;
+    int inst;
+    float avg_recall = 0, avg_precision = 0;
     // per image per category
     for (const auto& [key, value] : curr_confusion) {
+      float recall = 0, precision = 0;
       for (auto&& per_img_cat : value) {
         if (per_img_cat.truePos == 0) continue;
         recall += per_img_cat.truePos / per_img_cat.total_gt;
         precision += per_img_cat.truePos / per_img_cat.total_dt;
+        inst = per_img_cat.inst;
       }
+      avg_recall += recall / inst;
+      avg_precision += precision / inst;
     }
     // PRINT("Categories", catsize);
     // recall
-    precision_recall.x = recall / static_cast<float>(catsize);
+    precision_recall.x = avg_recall / static_cast<float>(dt.size());
 
     // precision
-    precision_recall.y = precision / static_cast<float>(catsize);
+    precision_recall.y = avg_recall / static_cast<float>(dt.size());
     // F1 score per category
     auto temp = (2.0f * precision_recall.x * precision_recall.y) /
                 (precision_recall.x + precision_recall.y);
@@ -124,6 +128,7 @@ coco::_processed_vla coco::precision_recall(const std::vector<float>& thres) {
       optimal_thres = ith_thres;
       process_values.x = ith_thres;
     }
+    PRINT("Result", precision_recall);
     // add to graph points
     process_values.y.push_back(precision_recall);
 

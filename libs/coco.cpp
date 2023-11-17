@@ -102,22 +102,22 @@ coco::_processed_vla coco::precision_recall(const std::vector<float>& thres) {
     auto curr_confusion = calculate_confusion(ith_thres);
     // PRINT("size of map", curr_confusion.size());
     point<float, float> precision_recall;  // x will have recall
-    int inst;
+    // int inst;
     float avg_recall = 0, avg_precision = 0;
     // per image per category
     for (const auto& [key, value] : curr_confusion) {
       float recall = 0, precision = 0;
       float len = value.size();
       for (auto&& per_img_cat : value) {
-        if (per_img_cat.truePos == 0) continue;
+        // if (per_img_cat.truePos == 0) continue;
         recall += per_img_cat.truePos / per_img_cat.total_gt;
         precision += per_img_cat.truePos / per_img_cat.total_dt;
-        inst = per_img_cat.inst;
+        // inst = per_img_cat.inst;
       }
       avg_recall += recall / len;
       avg_precision += precision / len;
     }
-    // PRINT("Categories", catsize);
+   
     // recall
     precision_recall.x = avg_recall / static_cast<float>(dt.size());
 
@@ -155,6 +155,7 @@ void coco::evaluation(const float* IOU_range) {
     return iouThreshold;
   });
   auto pre_rcal_thres = precision_recall(iouThrs);
+  computemAP(pre_rcal_thres.x);
 }
 float coco::computemAP(float thres) {  // will have to change.
   std::cout << "Computing IOUs for every detection to ground truth"
@@ -229,7 +230,7 @@ void coco::loadRes(const std::string resFile,
       dt[imgId].len++;
     }
   }
-  SEPARATOR;
+  // std::sort(dt.begin(), dt.end(), [](a[imgId].scores) {}); SEPARATOR;
   // dt = detections;
 }
 coco::~coco() {}

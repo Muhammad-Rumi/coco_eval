@@ -5,6 +5,7 @@ coco::coco(const std::string& annotation_file) {
   std::fstream file(annotation_file);
   std::cout << "Loading annnotations to memory..." << std::endl;
   dataset = json::parse(file);
+  alo = 0;
   create_index();
 }
 void coco::create_index() {
@@ -17,7 +18,9 @@ void coco::create_index() {
       int image_id = ann["image_id"];
       int id = ann["id"];
       EXTRACT(category_id, category_id, ann);
-      gt[image_id].bbox.push_back(EXTRACT(bbox, bbox, ann));
+      EXTRACT(bbox, bbox, ann);
+      gt[image_id].len++;
+      gt[image_id].bbox.push_back(bbox);
       gt[image_id].imgid = image_id;
       gt[image_id].catids.push_back(category_id);
       catToImgs[category_id].push_back(image_id);
@@ -25,12 +28,8 @@ void coco::create_index() {
   }
   // Print the size of the maps.
   PRINT("Number of images lable pair: ", gt.size());
-  SEPARATOR;
   PRINT("Number of categories: ", catToImgs.size());
-  // for (const auto& [id, datas] : gt) {
-  //   PRINT("Image id", id);
-  //   PRINT("gor every img bbox size: ", datas.bbox.size());
-  // }
+  SEPARATOR;
 }
 float coco::iou(const std::vector<float>& gt_bbox,
                 const std::vector<float>& dt_bbox) {
@@ -56,69 +55,88 @@ float coco::iou(const std::vector<float>& gt_bbox,
 
   return intersection_area / (area1 + area2 - intersection_area);
 }
-// void coco::filter(const std::shared_ptr<_map_label> original,
-//                   const float thres) {
-//     auto clipped = std::make_shared<_map_label>();
-//   // std::ofstream out("test.json");
+coco::_per_img_cat coco::calculate_confusion(const float& thres) {
+  _table_scaler confusion_mat(0, 0, 0);  // per image tp fp fn;
+  _per_img_cat test;
+  for (const auto& [imgId, d] : dt) {
+    const auto& ground_ann = gt.find(imgId);
+    if (ground_ann == gt.end()) {
+      continue;
+    }
+    int TP = 0, gt_per_img_cat = 0, dt_per_img_cat = 0;
+    for (int i = 0; i < ground_ann->second.len; ++i) {
+      std::vector<float> io;
+      auto a = ground_ann->second.bbox[i];  // some bug here
+      auto catId = ground_ann->second.catids[i];
+      std::transform(d.bbox.begin(), d.bbox.end(), std::back_inserter(io),
+                     [this, a, thres](std::vector<float> b) {
+                       return coco::iou(a, b) > thres;
+                     });
+      // per image per category
+      TP = std::accumulate(io.begin(), io.end(), 0.0f);
+      gt_per_img_cat = ground_ann->second.catids.size();
+      dt_per_img_cat = io.size();
+      //
+      confusion_mat.inst++;
+      confusion_mat.truePos = TP;
+      confusion_mat.total_dt = dt_per_img_cat;
+      confusion_mat.total_gt = gt_per_img_cat;
+      test[{imgId, catId}].push_back(confusion_mat);  // auto key_val =
+      //     "{" + std::to_string(imgId) + " ," + std::to_string(catId) + "}";
+      // PRINT(" At Current key the value is saved as" , key_val);
+    }
+  }
 
-//     for (const auto& [imgId, datas] : *original) {
-//       auto boundingBoxes = datas.bbox;
-//       auto scores = datas.scores;
-//       auto catids = datas.catids;
-
-//       // iterate over the bounding boxes and scores, adding them to the
-//       clipped
-//       // image detection
-//       for (size_t i = 0; i < boundingBoxes.size(); i++) {
-//         if (scores[i] >= thres) {
-//           clipped->operator[](imgId).bbox.push_back(boundingBoxes[i]);
-//           clipped->operator[](imgId).catids.push_back(catids[i]);
-//           clipped->operator[](imgId).scores.push_back(scores[i]);
-//         }
-//       }
-//     }
-//     // out << clipped;
-//     // PRINT("filtered array", clipped->size());
-//     dt = clipped;
-// }
-void coco::precision_recall(const std::vector<float>& thres) {
+  return test;
+}
+coco::_processed_vla coco::precision_recall(const std::vector<float>& thres) {
   std::cout << "Calculating precision recall" << std::endl;
-  float mAP = 0;
-  std::vector<int> truePos(91), total_gt(91), total_dt(91);
-  for (const auto& [catId, imgIds] : catToImgs) {
-    int TP = 0, gt_percat = 0, dt_percat = 0;
-    for (const auto& imgId : imgIds) {
-      const auto& detection_ann = dt.find(imgId);
-      const auto& ground_ann = gt.find(imgId);
-      if (ground_ann == gt.end()) {
-        continue;
+
+  _processed_vla process_values;
+  float optimal_thres = 0, F1 = 0;
+
+  for (auto& ith_thres : thres) {
+    PRINT("current threshold", ith_thres);
+    auto curr_confusion = calculate_confusion(ith_thres);
+    PRINT("size of map", curr_confusion.size());
+    point<float, float> precision_recall;  // x will have recall
+    int catsize = 5000;
+    float recall = 0, precision = 0;
+    // per image per category
+    for (const auto& [key, value] : curr_confusion) {
+      for (auto&& per_img_cat : value) {
+        if (per_img_cat.truePos == 0) continue;
+        recall += per_img_cat.truePos / per_img_cat.total_gt;
+        precision += per_img_cat.truePos / per_img_cat.total_dt;
       }
-      // std::cout << "iterating over bboxes" << std::endl;
-      for (int i = 0; i < ground_ann->second.bbox.size(); ++i) {
-        std::vector<float> io;
-        auto a = ground_ann->second.bbox[i];  // can add another filter by catid
-        std::transform(
-            detection_ann->second.bbox.begin(),
-            detection_ann->second.bbox.end(), std::back_inserter(io),
-            [this, a, thres](std::vector<float> b) {
-              return coco::iou(a, b) >
-                     thres[0];  // left to iterate over the thresholds
-            });
-        TP += std::accumulate(io.begin(), io.end(), 0.0f);
-        gt_percat += ground_ann->second.catids.size();
-        dt_percat += io.size();
-        // PRINT("Size of IOus", io.size());
-        // ious[std::make_pair(d_imgId, g->second.catids[i])] = io;
-      }
-      truePos[catId] = TP;
-      total_dt[catId] = dt_percat;
-      total_gt[catId] = gt_percat;
     }
+    // PRINT("Categories", catsize);
+    // recall
+    precision_recall.x = recall / static_cast<float>(catsize);
+
+    // precision
+    precision_recall.y = precision / static_cast<float>(catsize);
+    // F1 score per category
+    auto temp = (2.0f * precision_recall.x * precision_recall.y) /
+                (precision_recall.x + precision_recall.y);
+    if (temp > F1) {
+      F1 = temp;
+      optimal_thres = ith_thres;
+      process_values.x = ith_thres;
     }
-  zero_count(truePos);
+    // add to graph points
+    process_values.y.push_back(precision_recall);
+
+    // zero_count(curr_confusion.total_dt);
+  }
+  PRINT("best IOU threshold", process_values.x);
+  SEPARATOR;
+  return process_values;
 }
 void coco::evaluation(const float* IOU_range) {
-  assert(dt.size() == imgs.size());
+  /*
+    IOU_range = [start, stop, step]
+  */
   int rng = (IOU_range[1] - IOU_range[0]) / IOU_range[2];
   std::vector<float> iouThrs(rng);
 
@@ -127,18 +145,7 @@ void coco::evaluation(const float* IOU_range) {
     iouThreshold += IOU_range[2];
     return iouThreshold;
   });
-  precision_recall(iouThrs);
-  // std::vector<int> keys;
-
-  // std::transform(catToImgs.begin(), catToImgs.end(),
-  // std::back_inserter(keys),
-  //                [](const auto& pair) { return pair.first; });
-  // auto it = std::max_element(keys.begin(), keys.end());
-  // PRINT("Max catid", *it);
-  // filter(dt, score_thres); // using the fact that the data is already sorted.
-
-  // PRINT("size of dt", dt->size());
-  // computemAP(IOU_thres);
+  auto pre_rcal_thres = precision_recall(iouThrs);
 }
 float coco::computemAP(float thres) {  // will have to change.
   std::cout << "Computing IOUs for every detection to ground truth"
@@ -188,11 +195,13 @@ void coco::loadRes(const std::string resFile,
   if (flag == "float") {
     label temp;
     std::map<int, label> detections;
+    int id = 0;
     for (const auto& [imgid, ann] : result.items()) {
       temp.imgid = std::stoi(imgid);
       EXTRACT(temp.scores, scores, ann);
       EXTRACT(temp.bbox, bbox, ann);
       EXTRACT(temp.catids, catids, ann);
+      temp.len++;
       dt[temp.imgid] = temp;
     }
 
@@ -208,6 +217,7 @@ void coco::loadRes(const std::string resFile,
       dt[imgId].imgid = imgId;
       dt[imgId].catids.push_back(EXTRACT(category_id, category_id, ann));
       dt[imgId].scores.push_back(EXTRACT(score, score, ann));
+      dt[imgId].len++;
     }
   }
   SEPARATOR;

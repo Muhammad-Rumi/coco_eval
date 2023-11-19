@@ -10,8 +10,7 @@
 #include <vector>  // NOLINT
 
 #define EXTRACT(x, k, J) x = J[#k].get<decltype(x)>()
-#define PRINT(message, variable) \
-  std::cout << message << ": " << variable << std::endl
+#define PRINT(message, variable) std::cout << message << variable << std::endl
 #define SEPARATOR std::cout << "-------------------------------" << std::endl
 template <typename _T, typename _Y>
 struct point {
@@ -24,6 +23,9 @@ struct point {
 struct Key {
   int imgId;
   int catId;
+  friend std::ostream& operator<<(std::ostream& os, const Key& k) {
+    return os << k.imgId << ", " << k.catId;
+  }
 
   bool operator==(const Key& other) const {
     return imgId == other.imgId && catId == other.catId;
@@ -74,20 +76,30 @@ struct table {
 };
 
 class coco {
- private:
+ protected:
   using json = nlohmann::json;
   using _map_label = std::map<int, label>;
   using _shared_map = std::shared_ptr<_map_label>;
   using _vecjson = std::vector<json>;
+  using _img_cat = std::map<Key, std::vector<std::vector<float>>>;
+
+ private:
   json dataset;
   std::map<int, json> anns, cats, imgs, imgToAnns;
   std::map<int, std::vector<int>> catToImgs;  //  must remove later
   _map_label gt, dt;
+  _img_cat ious;
+
+ public:
+  std::string validation_file;
+  std::string detection_file;
+
+ private:
   void create_index();
   float iou(const std::vector<float>& gt_bbox,
             const std::vector<float>& dt_bbox);
 
-              void get_scores()
+  void get_scores();
   void precision_recall(const std::vector<float>& thres);
   float computemAP(float thres);
 

@@ -17,10 +17,12 @@ void coco::create_index() {
       int image_id = ann["image_id"];
       int id = ann["id"];
       EXTRACT(category_id, category_id, ann);
-      gt[image_id].bbox.push_back(EXTRACT(bbox, bbox, ann));
+      EXTRACT(bbox, bbox, ann);
+      gt[image_id].bbox.push_back(bbox);
       gt[image_id].imgid = image_id;
       gt[image_id].catids.push_back(category_id);
       catToImgs[category_id].push_back(image_id);
+      gt[image_id].len++;
     }
   }
   // Print the size of the maps.
@@ -56,7 +58,28 @@ float coco::iou(const std::vector<float>& gt_bbox,
 
   return intersection_area / (area1 + area2 - intersection_area);
 }
+void coco::get_scores() {
+  PRINT("Calculating IOUs...", "");
+  for (auto&& [imgId, dt_ann] : dt) {
+    _map_label::iterator g = gt.find(imgId);
+    if (g == gt.end()) {
+      continue;
+    }
 
+    for (int i = 0; i < g->second.len; ++i) {
+      std::vector<float> temp;
+      int catId = g->second.catids[i];
+      auto a = g->second.bbox[i];
+      std::transform(
+          dt_ann.bbox.begin(), dt_ann.bbox.end(), std::back_inserter(temp),
+          [this, a](std::vector<float> b) { return coco::iou(a, b); });
+      coco::ious[{imgId, catId}].push_back(temp);
+      // PRINT("temp size", temp.size());
+    }
+  }
+  PRINT("IOUs calculated", ious.size());
+  SEPARATOR;
+}
 void coco::precision_recall(const std::vector<float>& thres) {
   std::cout << "Calculating precision recall" << std::endl;
   float mAP = 0;
@@ -69,7 +92,6 @@ void coco::precision_recall(const std::vector<float>& thres) {
       if (ground_ann == gt.end()) {
         continue;
       }
-      // std::cout << "iterating over bboxes" << std::endl;
       for (int i = 0; i < ground_ann->second.bbox.size(); ++i) {
         std::vector<float> io;
         auto a = ground_ann->second.bbox[i];  // can add another filter by catid
@@ -94,21 +116,24 @@ void coco::precision_recall(const std::vector<float>& thres) {
   zero_count(truePos);
 }
 void coco::evaluation(const float* IOU_range) {
-  assert(dt.size() == imgs.size());
+  // assert(dt.size() == imgs.size());
   int rng = (IOU_range[1] - IOU_range[0]) / IOU_range[2];
   std::vector<float> iouThrs(rng);
-
+  get_scores();
+  PRINT("Size of dict<imgId><catId> of IOUs: ", ious.size());
   std::generate_n(iouThrs.begin(), iouThrs.size(), [IOU_range]() {
     static float iouThreshold = IOU_range[0] - IOU_range[2];
     iouThreshold += IOU_range[2];
     return iouThreshold;
   });
-  precision_recall(iouThrs);
-  // std::vector<int> keys;
 
-  // std::transform(catToImgs.begin(), catToImgs.end(),
-  // std::back_inserter(keys),
+  // precision_recall(iouThrs);
+  // std::vector<Key> keys;
+
+  // std::transform(ious.begin(), ious.end(), std::back_inserter(keys),
   //                [](const auto& pair) { return pair.first; });
+  // std::for_each(ious.begin(), ious.end(),
+  //               [](const auto& pair) { std::cout << pair.first; });
   // auto it = std::max_element(keys.begin(), keys.end());
   // PRINT("Max catid", *it);
   // filter(dt, score_thres); // using the fact that the data is already sorted.
@@ -182,8 +207,6 @@ void coco::loadRes(const std::string resFile, std::string flag) {
       dt[imgId].len++;
     }
   }
-  SEPARATOR;
-  // dt = detections;
   SEPARATOR;
 }
 coco::~coco() {}

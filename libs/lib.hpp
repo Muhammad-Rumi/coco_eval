@@ -13,9 +13,13 @@
 #define PRINT(message, variable) \
   std::cout << message << ": " << variable << std::endl
 #define SEPARATOR std::cout << "-------------------------------" << std::endl
-
+template <typename _T, typename _Y>
 struct point {
-  float x, y;
+  _T x;
+  _Y y;
+  friend std::ostream& operator<<(std::ostream& os, const point& p) {
+    return os << "mAP: " << p.x << ", mRc: " << p.y;
+  }
 };
 struct Key {
   int imgId;

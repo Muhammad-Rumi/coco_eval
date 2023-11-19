@@ -36,10 +36,37 @@ struct Key {
 };
 
 struct label {
-  int imgid;
+  int imgid, len;
   std::vector<std::vector<float>> bbox;
   std::vector<int> catids;
   std::vector<float> scores;
+};
+
+template <typename _t, typename _y, typename _r>
+struct table {
+  static int inst;
+  int id, id1, id2;
+  _t truePos;
+  _y total_gt;
+  _r total_dt;
+  explicit table(const int& size) {
+    // inst = size;
+    id = -1, id1 = -1, id2 = -1;
+    truePos.resize(size);
+    total_gt.resize(size);
+    total_dt.resize(size);
+  }
+  table(const _t& tp, const _y& tg, const _r& td) {
+    inst++;
+    id = -1, id1 = -1, id2 = -1;
+    truePos = tp;
+    total_gt = tg;
+    total_dt = td;
+  }
+  table() {
+    // inst++;
+    id = -1, id1 = -1, id2 = -1;
+  }
 };
 
 class coco {

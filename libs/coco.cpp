@@ -56,31 +56,7 @@ float coco::iou(const std::vector<float>& gt_bbox,
 
   return intersection_area / (area1 + area2 - intersection_area);
 }
-// void coco::filter(const std::shared_ptr<_map_label> original,
-//                   const float thres) {
-//     auto clipped = std::make_shared<_map_label>();
-//   // std::ofstream out("test.json");
 
-//     for (const auto& [imgId, datas] : *original) {
-//       auto boundingBoxes = datas.bbox;
-//       auto scores = datas.scores;
-//       auto catids = datas.catids;
-
-//       // iterate over the bounding boxes and scores, adding them to the
-//       clipped
-//       // image detection
-//       for (size_t i = 0; i < boundingBoxes.size(); i++) {
-//         if (scores[i] >= thres) {
-//           clipped->operator[](imgId).bbox.push_back(boundingBoxes[i]);
-//           clipped->operator[](imgId).catids.push_back(catids[i]);
-//           clipped->operator[](imgId).scores.push_back(scores[i]);
-//         }
-//       }
-//     }
-//     // out << clipped;
-//     // PRINT("filtered array", clipped->size());
-//     dt = clipped;
-// }
 void coco::precision_recall(const std::vector<float>& thres) {
   std::cout << "Calculating precision recall" << std::endl;
   float mAP = 0;
@@ -109,12 +85,12 @@ void coco::precision_recall(const std::vector<float>& thres) {
         dt_percat += io.size();
         // PRINT("Size of IOus", io.size());
         // ious[std::make_pair(d_imgId, g->second.catids[i])] = io;
+        truePos[catId] = TP;
+        total_dt[catId] = dt_percat;
+        total_gt[catId] = gt_percat;
       }
-      truePos[catId] = TP;
-      total_dt[catId] = dt_percat;
-      total_gt[catId] = gt_percat;
     }
-    }
+  }
   zero_count(truePos);
 }
 void coco::evaluation(const float* IOU_range) {

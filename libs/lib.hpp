@@ -17,6 +17,24 @@
 struct point {
   float x, y;
 };
+struct Key {
+  int imgId;
+  int catId;
+
+  bool operator==(const Key& other) const {
+    return imgId == other.imgId && catId == other.catId;
+  }
+  bool operator<(const Key& other) const {
+    return (imgId < other.imgId) ||
+           (imgId == other.imgId && catId < other.catId);
+  }
+
+  size_t hash() const {
+    std::hash<int> hasher;
+    return hasher(imgId) ^ hasher(catId);
+  }
+};
+
 struct label {
   int imgid;
   std::vector<std::vector<float>> bbox;

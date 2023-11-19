@@ -66,6 +66,7 @@ coco::_per_img_cat coco::calculate_confusion(const float& thres) {
       continue;
     }
     int TP = 0, gt_per_img_cat = 0, dt_per_img_cat = 0;
+    _table_scaler confusion_mat(0, 0, 0);
     for (int i = 0; i < ground_ann->second.len; ++i) {
       std::vector<float> io;
       auto a = ground_ann->second.bbox[i];  // some bug here
@@ -79,13 +80,11 @@ coco::_per_img_cat coco::calculate_confusion(const float& thres) {
       gt_per_img_cat = ground_ann->second.catids.size();
       dt_per_img_cat = io.size();
       //
-      _table_scaler confusion_mat(0, 0, 0);  // per image tp fp fn;
+      // per image tp fp fn;
       confusion_mat.truePos = TP;
       confusion_mat.total_dt = dt_per_img_cat;
       confusion_mat.total_gt = gt_per_img_cat;
-      test[{imgId, catId}].push_back(confusion_mat);  // auto key_val =
-      //     "{" + std::to_string(imgId) + " ," + std::to_string(catId) + "}";
-      // PRINT(" At Current key the value is saved as" , key_val);
+      test[{imgId, catId}].push_back(confusion_mat);
     }
   }
 
@@ -117,7 +116,6 @@ coco::_processed_vla coco::precision_recall(const std::vector<float>& thres) {
       avg_recall += recall / len;
       avg_precision += precision / len;
     }
-   
     // recall
     precision_recall.x = avg_recall / static_cast<float>(dt.size());
 
@@ -160,7 +158,6 @@ void coco::evaluation(const float* IOU_range) {
 float coco::computemAP(float thres) {  // will have to change.
   std::cout << "Computing IOUs for every detection to ground truth"
             << std::endl;
-  // std::map<std::pair<int, float>, std::vector<float>> ious;
   float mAP = 0;
   for (const auto& [d_imgId, d] : dt) {
     float AP = 0;
@@ -176,25 +173,19 @@ float coco::computemAP(float thres) {  // will have to change.
                        return coco::iou(a, b) > thres;
                      });
       AP += std::accumulate(io.begin(), io.end(), 0.0f) / io.size();
-      // PRINT("Size of IOus", io.size());
-      // ious[std::make_pair(d_imgId, g->second.catids[i])] = io;
     }
 
     AP = AP / g->second.catids.size();
     // AP/= 80;
     mAP += AP;
-    // PRINT("catids sizes for every image", g.catids.size());
-    // break;
   }
   mAP /= dt.size();
   PRINT("mAP", mAP * 100);
-  // PRINT("IOus with unique labels", ious.size());
   SEPARATOR;
   return mAP;
 }
 
-void coco::loadRes(const std::string resFile,
-                   std::string flag) {  // need to be completed.
+void coco::loadRes(const std::string resFile, std::string flag) {
   std::fstream file(resFile);
   if (!file.is_open()) {
     throw std::runtime_error("Failed to open file:" + resFile);
@@ -222,15 +213,18 @@ void coco::loadRes(const std::string resFile,
     std::cout << "Processing... " << std::endl;
     for (const auto& ann : result) {
       int imgId = ann["image_id"];
-      // auto scores = ann["score"];
-      dt[imgId].bbox.push_back(EXTRACT(bbox, bbox, ann));
+      EXTRACT(score, score, ann);
+      EXTRACT(category_id, category_id, ann);
+      EXTRACT(bbox, bbox, ann);
+      dt[imgId].bbox.push_back(bbox);
       dt[imgId].imgid = imgId;
-      dt[imgId].catids.push_back(EXTRACT(category_id, category_id, ann));
-      dt[imgId].scores.push_back(EXTRACT(score, score, ann));
+      dt[imgId].catids.push_back(category_id);
+      dt[imgId].scores.push_back(score);
       dt[imgId].len++;
     }
   }
   // std::sort(dt.begin(), dt.end(), [](a[imgId].scores) {}); SEPARATOR;
   // dt = detections;
+  SEPARATOR;
 }
 coco::~coco() {}

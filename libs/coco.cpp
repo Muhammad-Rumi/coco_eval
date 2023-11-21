@@ -39,7 +39,7 @@ float coco::iou(const std::vector<float>& gt_bbox,
   /*
   input:
   gt_bbox = [xmin, ymin, w, h]
-  dt_bbox = [ymin, xmin, ymax, xmax]
+  dt_bbox = [xmin, ymin, w, h]
   ouput:
   float iou;
   */
@@ -47,10 +47,10 @@ float coco::iou(const std::vector<float>& gt_bbox,
   // PRINT("dt_bbox", dt_bbox.size());
   assert(gt_bbox.size() == 4 && dt_bbox.size() == 4);
   float x1, y1, x2, y2;
-  x1 = std::max(gt_bbox[0], dt_bbox[1]);
-  y1 = std::max(gt_bbox[1], dt_bbox[0]);
-  x2 = std::min(gt_bbox[0] + gt_bbox[2], dt_bbox[2]);
-  y2 = std::min(gt_bbox[1] + gt_bbox[3], dt_bbox[3]);
+  x1 = std::max(gt_bbox[0], dt_bbox[0]);
+  y1 = std::max(gt_bbox[1], dt_bbox[1]);
+  x2 = std::min(gt_bbox[0] + gt_bbox[2], dt_bbox[0] + dt_bbox[2]);
+  y2 = std::min(gt_bbox[1] + gt_bbox[3], dt_bbox[1] + dt_bbox[3]);
   if (x2 < x1 || y2 < y1) return 0.0;  // if there is no overlap between bboxes
 
   float intersection_area = (x2 - x1) * (y2 - y1);

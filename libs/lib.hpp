@@ -1,4 +1,5 @@
-#pragma once  // NOLINT
+// Copyright [2023] <Mhammad Rumi>
+#pragma once
 
 #include <fstream>
 #include <iostream>
@@ -17,14 +18,14 @@ struct point {
   _T x;
   _Y y;
   friend std::ostream& operator<<(std::ostream& os, const point& p) {
-    return os << "mAP: " << p.x << ", mRc: " << p.y;
+    return os  << p.x << ", " << p.y << std::endl;
   }
 };
 struct Key {
   int imgId;
   int catId;
   friend std::ostream& operator<<(std::ostream& os, const Key& k) {
-    return os << k.imgId << ", " << k.catId;
+    return os << k.imgId << ", " << k.catId << std::endl;
   }
 
   bool operator==(const Key& other) const {
@@ -82,6 +83,7 @@ class coco {
   using _shared_map = std::shared_ptr<_map_label>;
   using _vecjson = std::vector<json>;
   using _img_cat = std::map<Key, std::vector<std::vector<float>>>;
+  using _curve = std::vector<point<float, float>>;
 
  private:
   json dataset;
@@ -100,7 +102,7 @@ class coco {
             const std::vector<float>& dt_bbox);
 
   void get_scores();
-  void precision_recall(const std::vector<float>& thres);
+  _curve precision_recall(const std::vector<float>& thres);
   float computemAP(float thres);
 
  public:
@@ -128,7 +130,7 @@ void zero_count(const std::vector<int>& myVector) {
   int zeroCount = std::count_if(myVector.begin(), myVector.end(),
                                 [](int x) { return x == 0; });
   std::cout << "Number of zeros: " << zeroCount << std::endl;
-  for (auto&& i : myVector) {
-    std::cout << i << std::endl;
-  }
+  // for (auto&& i : myVector) {
+  //   std::cout << i << std::endl;
+  // }
 }

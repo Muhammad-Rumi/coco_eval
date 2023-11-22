@@ -71,10 +71,20 @@ void coco::get_scores() {
       std::vector<float> temp;
       int catId = g->second.catids[i];
       auto a = g->second.bbox[i];
-      std::transform(
-          dt_ann.bbox.begin(), dt_ann.bbox.end(), std::back_inserter(temp),
-          [this, a](std::vector<float> b) { return coco::iou(a, b); });
+
+      for (int det_idx = 0; det_idx < dt_ann.len; ++det_idx) {
+        if (catId != dt_ann.catids[det_idx]) continue;
+        float temps = coco::iou(a, dt_ann.bbox[i]);
+        temp.push_back(temps);
+      }
       coco::ious[{imgId, catId}].push_back(temp);
+      // std::transform(
+      //     dt_ann.bbox.begin(), dt_ann.bbox.end(), std::back_inserter(temp),
+      //     [this, a](std::vector<float> b) { return coco::iou(a, b); });
+      // coco::ious[{imgId, catId}].push_back(temp);
+      // std::for_each(temp.begin(), temp.end(),
+      //               [](const float& i) { std::cout << i << ", "; });
+      // std::cout << std::endl;
       // PRINT("temp size", temp.size());
     }
   }

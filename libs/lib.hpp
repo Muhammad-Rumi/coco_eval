@@ -10,7 +10,7 @@
 #include <string>  // NOLINT
 #include <vector>  // NOLINT
 
-#define EXTRACT(x, k, J) x = J[#k].get<decltype(x)>()
+#define EXTRACT(x, J) x = J[#x].get<decltype(x)>()
 #define PRINT(message, variable) std::cout << message << variable << std::endl
 #define SEPARATOR std::cout << "-------------------------------" << std::endl
 template <typename _T, typename _Y>
@@ -43,10 +43,9 @@ struct Key {
 };
 
 struct label {
-  int imgid, len;
-  std::vector<std::vector<float>> bbox;
-  std::vector<int> catids;
-  std::vector<float> scores;
+  int imgid, catids;
+  float scores;
+  std::vector<float> bbox;
 };
 
 template <typename _t, typename _y, typename _r>
@@ -79,7 +78,7 @@ struct table {
 class coco {
  protected:
   using json = nlohmann::json;
-  using _map_label = std::map<int, label>;
+  using _map_label = std::map<Key, std::vector<label>>;
   using _shared_map = std::shared_ptr<_map_label>;
   using _vecjson = std::vector<json>;
   using _img_cat = std::map<Key, std::vector<std::vector<float>>>;

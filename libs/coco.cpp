@@ -12,17 +12,15 @@ void coco::create_index() {
 
   std::vector<float> bbox;
   int category_id;
+  int image_id;
   if (dataset.contains("annotations")) {
     for (auto& ann : dataset["annotations"]) {
-      int image_id = ann["image_id"];
-      int id = ann["id"];
-      EXTRACT(category_id, category_id, ann);
-      EXTRACT(bbox, bbox, ann);
-      gt[image_id].bbox.push_back(bbox);
-      gt[image_id].imgid = image_id;
-      gt[image_id].catids.push_back(category_id);
-      catToImgs[category_id].push_back(image_id);
-      gt[image_id].len++;
+      //  = ann["image_id"];
+      EXTRACT(image_id, ann);
+      // int id = ann["id"];
+      EXTRACT(category_id, ann);
+      EXTRACT(bbox, ann);
+      gt[{image_id, category_id}].push_back({image_id, category_id, 1., bbox});
     }
   }
   // Print the size of the maps.
@@ -170,35 +168,6 @@ void coco::evaluation(const float* IOU_range) {
   // PRINT("size of dt", dt->size());
   // computemAP(IOU_thres);
 }
-float coco::computemAP(float thres) {  // will have to change.
-  std::cout << "Computing IOUs for every detection to ground truth"
-            << std::endl;
-  float mAP = 0;
-  for (const auto& [d_imgId, d] : dt) {
-    float AP = 0;
-    auto g = gt.find(d_imgId);
-    if (g == gt.end()) {
-      continue;
-    }
-    for (int i = 0; i < g->second.bbox.size(); ++i) {
-      std::vector<float> io;
-      const auto& a = g->second.bbox[i];  // can add another filter by catid
-      std::transform(d.bbox.begin(), d.bbox.end(), std::back_inserter(io),
-                     [this, a, thres](std::vector<float> b) {
-                       return coco::iou(a, b) > thres;
-                     });
-      AP += std::accumulate(io.begin(), io.end(), 0.0f) / io.size();
-    }
-
-    AP = AP / g->second.catids.size();
-    // AP/= 80;
-    mAP += AP;
-  }
-  mAP /= dt.size();
-  PRINT("mAP", mAP * 100);
-  SEPARATOR;
-  return mAP;
-}
 
 void coco::loadRes(const std::string resFile, std::string flag) {
   std::fstream file(resFile);
@@ -208,34 +177,21 @@ void coco::loadRes(const std::string resFile, std::string flag) {
   std::cout << "Loading results to memory..." << std::endl;
   json result = json::parse(file);
 
-  if (flag == "float") {
-    label temp;
-    std::map<int, label> detections;
-    for (const auto& [imgid, ann] : result.items()) {
-      temp.imgid = std::stoi(imgid);
-      EXTRACT(temp.scores, scores, ann);
-      EXTRACT(temp.bbox, bbox, ann);
-      EXTRACT(temp.catids, catids, ann);
-      temp.len++;
-      dt[temp.imgid] = temp;
-    }
-
-  } else {
-    std::vector<float> bbox;
-    int category_id;
-    float score;
-    std::cout << "Processing... " << std::endl;
-    for (const auto& ann : result) {
-      int imgId = ann["image_id"];
-      EXTRACT(score, score, ann);
-      EXTRACT(category_id, category_id, ann);
-      EXTRACT(bbox, bbox, ann);
-      dt[imgId].bbox.push_back(bbox);
-      dt[imgId].imgid = imgId;
-      dt[imgId].catids.push_back(category_id);
-      dt[imgId].scores.push_back(score);
-      dt[imgId].len++;
-    }
+  std::vector<float> bbox;
+  int category_id;
+  float score;
+  int image_id;
+  std::cout << "Processing... " << std::endl;
+  for (const auto& ann : result) {
+    // imageId = ann["image_id"];
+    EXTRACT(image_id, ann);
+    EXTRACT(score, ann);
+    EXTRACT(category_id, ann);
+    EXTRACT(bbox, ann);
+    dt[{image_id, category_id}].push_back({image_id, category_id, score, bbox});
+    // dt[imgId].imgid = imgId;
+    // dt[imgId].catids.push_back(category_id);
+    // dt[imgId].scores.push_back(score);
   }
   /*
   would have to add a sort function if you want to draw bbox on the images.

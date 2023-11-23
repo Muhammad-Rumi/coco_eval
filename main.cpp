@@ -19,5 +19,10 @@ int main(int argc, char* argv[]) {
   test.loadRes(argv[5], argv[4]);
   float iourange[] = {std::stof(argv[1]), std::stof(argv[2]),
                       std::stof(argv[3])};
+  // std::vector<float> bbox1 = {10, 20, 40, 10};
+  // std::vector<float> bbox2 = {20, 25, 50, 10};
+  // auto x = test.iou(bbox1, bbox2);
+  // PRINT("iou of dummy boxes: ", x);
+
   test.evaluation(iourange);
 }

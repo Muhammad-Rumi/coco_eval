@@ -14,6 +14,7 @@ void coco::create_index() {
   int category_id;
   if (dataset.contains("annotations")) {
     for (auto& ann : dataset["annotations"]) {
+      if (ann["iscrowd"] == 1) continue;
       int image_id = ann["image_id"];
       int id = ann["id"];
       EXTRACT(category_id, category_id, ann);
@@ -54,8 +55,8 @@ float coco::iou(const std::vector<float>& gt_bbox,
   if (x2 < x1 || y2 < y1) return 0.0;  // if there is no overlap between bboxes
 
   float intersection_area = (x2 - x1) * (y2 - y1);
-  float area1 = (gt_bbox[2] - gt_bbox[0]) * (gt_bbox[3] - gt_bbox[1]);
-  float area2 = (dt_bbox[2] - dt_bbox[0]) * (dt_bbox[3] - dt_bbox[1]);
+  float area1 = (gt_bbox[2]) * (gt_bbox[3]);
+  float area2 = (dt_bbox[2]) * (dt_bbox[3]);
 
   return intersection_area / (area1 + area2 - intersection_area);
 }
@@ -76,71 +77,96 @@ void coco::get_scores() {
         if (catId != dt_ann.catids[det_idx]) continue;
         float temps = coco::iou(a, dt_ann.bbox[i]);
         temp.push_back(temps);
+        coco::ious[{imgId, catId}].push_back(temps);
       }
-      coco::ious[{imgId, catId}].push_back(temp);
+
       // std::transform(
       //     dt_ann.bbox.begin(), dt_ann.bbox.end(), std::back_inserter(temp),
       //     [this, a](std::vector<float> b) { return coco::iou(a, b); });
       // coco::ious[{imgId, catId}].push_back(temp);
+      // PRINT("temp size: ", temp.size());
       // std::for_each(temp.begin(), temp.end(),
       //               [](const float& i) { std::cout << i << ", "; });
       // std::cout << std::endl;
-      // PRINT("temp size", temp.size());
     }
   }
   PRINT("IOUs calculated: ", ious.size());
   SEPARATOR;
 }
-coco::_curve coco::precision_recall(const std::vector<float>& thres) {
+std::map<int, coco::_curve> coco::precision_recall(
+    const std::vector<float>& thres) {
   std::cout << "Calculating precision recall" << std::endl;
-  _curve pr;
+
+  std::map<int, _curve> pr;
   std::map<int, std::vector<point<int, int>>> per_sample_tp_dt;
   std::vector<int> truePos(91), total_gt(91), total_dt(91);
+
   for (const auto& [catId, imgIds] : catToImgs) {
     int TP = 0, gt_percat = 0, dt_percat = 0;
-
+    PRINT("current CatID: ", catId);
     for (const auto& imgId : imgIds) {
-      const auto& current_per_img_cat_id_iou = ious[{imgId, catId}];
+      Key keys = {imgId, catId};
+      const auto& current_per_img_cat_id_iou = ious[keys];
+      // std::for_each(
+      //     current_per_img_cat_id_iou.begin(),
+      //     current_per_img_cat_id_iou.end(), [imgId, catId](const float& i) {
+      //       std::cout << imgId << ", " << catId << ": " << i << std::endl;
+      //     });
+      // PRINT("current key: ", keys);
+      // PRINT("Size of IOU: ", current_per_img_cat_id_iou.size());
+      auto x = count_x(gt[imgId].catids, catId);
 
-      // if (ground_ann == gt.end() || detection_ann == dt.end()) continue;
       // getting True positives upon IOU threshold.
-      for (auto& percat_bbox_ious : current_per_img_cat_id_iou) {
-        std::vector<int> matches;
-        std::transform(
-            percat_bbox_ious.begin(), percat_bbox_ious.end(),
-            std::back_inserter(matches), [thres](float iou) {
-              return iou > thres[0];  // left to iterate over the thresholds
-            });
 
-        TP += std::accumulate(matches.begin(), matches.end(), 0.0f);
-        dt_percat += matches.size();
-      }
+      std::vector<int> matches;
+      // PRINT("Size of ")
+      std::transform(
+          current_per_img_cat_id_iou.begin(), current_per_img_cat_id_iou.end(),
+          std::back_inserter(matches), [thres](float iou) {
+            return iou > thres[0];  // left to iterate over the thresholds
+          });
+      // PRINT("Matches size: ", matches.size());
+
+      TP += std::accumulate(matches.begin(), matches.end(), 0);
+      assert(std::accumulate(matches.begin(), matches.end(), 0) <= x);
+      dt_percat += matches.size();
+
       per_sample_tp_dt[catId].push_back({TP, dt_percat});
       // total samples of a category in the entire dataset
-      gt_percat += current_per_img_cat_id_iou.size();
+      gt_percat += x;
     }
+    SEPARATOR;
     truePos[catId] = TP;
     total_dt[catId] = dt_percat;
     total_gt[catId] = gt_percat;
+    PRINT("Catid: ", catId);
+    SEPARATOR;
+    PRINT("TP: ", TP);
+    PRINT("TP+FN: ", gt_percat);
+    SEPARATOR;
+    break;
   }
   float P, R;
   for (auto&& [cats, tp_dt_per_cat] : per_sample_tp_dt) {
-    for (int i = 0; i < tp_dt_per_cat.size(); i++) {
+    for (int i = 0; i < tp_dt_per_cat.size(); ++i) {
       P = static_cast<float>(tp_dt_per_cat[i].x) /
           (static_cast<float>(tp_dt_per_cat[i].y) + 0.00001);
       R = static_cast<float>(tp_dt_per_cat[i].x) /
           (static_cast<float>(total_gt[cats]) + 0.00001);
-      pr.push_back({P, R});
+      pr[cats].push_back({P, R});
     }
     // break;
   }
 
-  for_each(pr.begin(), pr.end(), [](point<float, float>& a) {
-    std::cout << a;
-    SEPARATOR;
-  });
-  zero_count(truePos);
-  PRINT("len of pr variable", pr.size());
+  // for_each(pr.begin(), pr.end(),
+  //          [](std::pair<const int, std::vector<point<float, float>>> a) {
+  //            std::cout << a.first << ": ";
+  //            for_each(a.second.begin(), a.second.end(),
+  //                     [](point<float, float> j) { std::cout << j; });
+  //            SEPARATOR;
+  //          });
+  count_x(truePos, 0);
+  PRINT("len of pr variable: ", pr.size());
   return pr;
 }
 void coco::evaluation(const float* IOU_range) {
@@ -149,7 +175,13 @@ void coco::evaluation(const float* IOU_range) {
   std::vector<float> iouThrs(rng);
   // compute IOUs.
   get_scores();
-  PRINT("Size of dict<imgId><catId> of IOUs: ", ious.size());
+  // auto test = ious.find({139, 62});
+  // std::for_each(
+  //     test->second.begin(), test->second.end(), [](std::vector<float> a) {
+  //       for_each(a.begin(), a.end(), [](float& j) { std::cout << j << ", ";
+  //       }); std::cout << std::endl; SEPARATOR;
+  //     });
+  // PRINT("Size of dict<imgId><catId> of IOUs: ", ious.size());
   std::generate_n(iouThrs.begin(), iouThrs.size(), [IOU_range]() {
     static float iouThreshold = IOU_range[0] - IOU_range[2];
     iouThreshold += IOU_range[2];
@@ -157,6 +189,7 @@ void coco::evaluation(const float* IOU_range) {
   });
 
   auto preci_recall_vals = precision_recall(iouThrs);
+
   // std::vector<Key> keys;
 
   // std::transform(ious.begin(), ious.end(), std::back_inserter(keys),

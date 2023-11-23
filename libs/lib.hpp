@@ -18,7 +18,7 @@ struct point {
   _T x;
   _Y y;
   friend std::ostream& operator<<(std::ostream& os, const point& p) {
-    return os  << p.x << ", " << p.y << std::endl;
+    return os << p.x << ", " << p.y << std::endl;
   }
 };
 struct Key {
@@ -82,7 +82,7 @@ class coco {
   using _map_label = std::map<int, label>;
   using _shared_map = std::shared_ptr<_map_label>;
   using _vecjson = std::vector<json>;
-  using _img_cat = std::map<Key, std::vector<std::vector<float>>>;
+  using _img_cat = std::map<Key, std::vector<float>>;
   using _curve = std::vector<point<float, float>>;
 
  private:
@@ -102,7 +102,7 @@ class coco {
             const std::vector<float>& dt_bbox);
 
   void get_scores();
-  _curve precision_recall(const std::vector<float>& thres);
+  std::map<int, _curve> precision_recall(const std::vector<float>& thres);
   float computemAP(float thres);
 
  public:
@@ -126,11 +126,12 @@ void zero_loc(
               << std::endl;
   }
 }
-void zero_count(const std::vector<int>& myVector) {
-  int zeroCount = std::count_if(myVector.begin(), myVector.end(),
-                                [](int x) { return x == 0; });
-  std::cout << "Number of zeros: " << zeroCount << std::endl;
+int count_x(const std::vector<int>& myVector, int x) {
+  int Count = std::count_if(myVector.begin(), myVector.end(),
+                            [x](int y) { return y == x; });
+  // std::cout << "Number of zeros: " << Count << std::endl;
   // for (auto&& i : myVector) {
   //   std::cout << i << std::endl;
   // }
+  return Count;
 }

@@ -160,9 +160,9 @@ std::map<int, coco::_curve> coco::precision_recall(
   for (auto&& [cats, tp_dt_per_cat] : per_sample_tp_dt) {
     for (int i = 0; i < tp_dt_per_cat.size(); ++i) {
       P = static_cast<float>(tp_dt_per_cat[i].x) /
-          (static_cast<float>(tp_dt_per_cat[i].y) + 0.00001);
+          (static_cast<float>(tp_dt_per_cat[i].y) + EP0);
       R = static_cast<float>(tp_dt_per_cat[i].x) /
-          (static_cast<float>(total_gt[cats]) + 0.00001);
+          (static_cast<float>(total_gt[cats]) + EP0);
       pr[cats].push_back({P, R});
     }
   }

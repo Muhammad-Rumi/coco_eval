@@ -10,6 +10,7 @@
 #include <string>  // NOLINT
 #include <vector>  // NOLINT
 
+#define EP0 0.00001
 #define EXTRACT(x, J) x = J[#x].get<decltype(x)>()
 #define PRINT(message, variable) std::cout << message << variable << std::endl
 #define SEPARATOR std::cout << "-------------------------------" << std::endl

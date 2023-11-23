@@ -18,7 +18,7 @@ struct point {
   _T x;
   _Y y;
   friend std::ostream& operator<<(std::ostream& os, const point& p) {
-    return os << p.x << ", " << p.y << std::endl;
+    return os << p.x << ", " << p.y;
   }
 };
 struct Key {
@@ -35,7 +35,10 @@ struct Key {
     return (imgId < other.imgId) ||
            (imgId == other.imgId && catId < other.catId);
   }
-
+bool operator>(const Key& other) const {
+    return (imgId > other.imgId) ||
+           (imgId == other.imgId && catId > other.catId);
+  }
   size_t hash() const {
     std::hash<int> hasher;
     return hasher(imgId) ^ hasher(catId);
@@ -43,6 +46,7 @@ struct Key {
 };
 
 struct label {
+  int is_crowd;
   int imgid, catids;
   float scores;
   std::vector<float> bbox;
@@ -94,6 +98,8 @@ class coco {
  public:
   std::string validation_file;
   std::string detection_file;
+  std::vector<int> imgIds;
+  std::vector<int> catIds;
 
  private:
   void create_index();
@@ -105,7 +111,7 @@ class coco {
   float computemAP(float thres);
 
  public:
-  explicit coco(const std::string& annotation_file);
+  explicit coco(const std::string&);
   ~coco();
   void evaluation(const float* IOU_range);
   _vecjson get_annotations(int image_id);
@@ -134,3 +140,13 @@ int count_x(const std::vector<int>& myVector, int x) {
   // }
   return Count;
 }
+int count_x(const std::vector<label>& myVector, int x) {
+  int Count = std::count_if(myVector.begin(), myVector.end(),
+                            [x](label y) { return y.catids == x; });
+  // std::cout << "Number of zeros: " << Count << std::endl;
+  // for (auto&& i : myVector) {
+  //   std::cout << i << std::endl;
+  // }
+  return Count;
+}
+

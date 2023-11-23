@@ -25,4 +25,11 @@ int main(int argc, char* argv[]) {
   // PRINT("iou of dummy boxes: ", x);
 
   test.evaluation(iourange);
+  // std::cout << "ImgIds" << std::endl;
+  // std::for_each(test.imgIds.begin(), test.imgIds.end(),
+  //               [](int a) { std::cout << a << ", " ;});
+  // SEPARATOR;
+  // std::cout << "CatIds" << std::endl;
+  // std::for_each(test.catIds.begin(), test.catIds.end(),
+  //               [](int a) { std::cout << a << ", " ;});
 }

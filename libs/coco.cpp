@@ -18,10 +18,8 @@ void coco::create_index() {
   int iscrowd;
   if (dataset.contains("annotations")) {
     for (auto& ann : dataset["annotations"]) {
-      //  = ann["image_id"];
       EXTRACT(image_id, ann);
       EXTRACT(iscrowd, ann);
-      // int id = ann["id"];
       EXTRACT(category_id, ann);
       EXTRACT(bbox, ann);
       gt[{image_id, category_id}].push_back(
@@ -44,10 +42,6 @@ void coco::create_index() {
   PRINT("Number of categories: ", catIds.size());
   PRINT("Total no. of images: ", imgIds.size());
   SEPARATOR;
-  // for (const auto& [id, datas] : gt) {
-  //   PRINT("Image id", id);
-  //   PRINT("gor every img bbox size: ", datas.bbox.size());
-  // }
 }
 float coco::iou(const std::vector<float>& gt_bbox,
                 const std::vector<float>& dt_bbox) {
@@ -58,9 +52,6 @@ float coco::iou(const std::vector<float>& gt_bbox,
   ouput:
   float iou;
   */
-  // PRINT("gt_bbox: ", gt_bbox.size());
-  // PRINT("dt_bbox: ", dt_bbox.size());
-  // return 0;
   assert(gt_bbox.size() == 4 && dt_bbox.size() == 4);
   float x1, y1, x2, y2;
   x1 = std::max(gt_bbox[0], dt_bbox[0]);
@@ -93,14 +84,6 @@ void coco::get_scores() {
         temp.push_back(temps);
       }
       coco::ious[key].push_back(*std::max_element(temp.begin(), temp.end()));
-      // std::transform(
-      //     dt_ann.bbox.begin(), dt_ann.bbox.end(), std::back_inserter(temp),
-      //     [this, a](std::vector<float> b) { return coco::iou(a, b); });
-      // coco::ious[{imgId, catId}].push_back(temp);
-      // PRINT("temp size: ", temp.size());
-      // std::for_each(temp.begin(), temp.end(),
-      //               [](const float& i) { std::cout << i << ", "; });
-      // std::cout << std::endl;
     }
   }
   PRINT("IOUs calculated: ", ious.size());
@@ -119,28 +102,19 @@ std::map<int, coco::_curve> coco::precision_recall(
     for (const auto& imgId : imgIds) {
       Key keys = {imgId, catId};
       const auto& current_per_img_cat_id_iou = ious[keys];
-      // PRINT("current key: ", keys);
-      // PRINT("Size of IOU: ", current_per_img_cat_id_iou.size());
       auto x = count_x(gt[keys], catId);
-      // PRINT("total cases in ground truth: ", x);
-
       // getting True positives upon IOU threshold.
-
       std::vector<int> matches;
-      // PRINT("Size of ")
       std::transform(current_per_img_cat_id_iou.begin(),
                      current_per_img_cat_id_iou.end(),
                      std::back_inserter(matches), [thres](float iou) {
                        return iou > 0.5;  // left to iterate over the thresholds
                      });
-      // PRINT("Matches size: ", matches.size());
       auto tp = std::accumulate(matches.begin(), matches.end(), 0);
       if (tp > x) tp = x;
       TP += tp;
-      // PRINT("Total True Positive: ", tp);
       assert(tp <= x);
       dt_percat += matches.size();
-
       per_sample_tp_dt[catId].push_back({TP, dt_percat});
       // total samples of a category in the entire dataset
       gt_percat += x;
@@ -149,12 +123,6 @@ std::map<int, coco::_curve> coco::precision_recall(
     truePos[catId] = TP;
     total_dt[catId] = dt_percat;
     total_gt[catId] = gt_percat;
-    // PRINT("Catid: ", catId);
-    // SEPARATOR;
-    // PRINT("TP: ", TP);
-    // PRINT("TP+FN: ", gt_percat);
-    // SEPARATOR;
-    // PRINT("total ground truth ann per category", total_gt[catId]);
   }
   float P, R;
   for (auto&& [cats, tp_dt_per_cat] : per_sample_tp_dt) {
@@ -166,14 +134,6 @@ std::map<int, coco::_curve> coco::precision_recall(
       pr[cats].push_back({P, R});
     }
   }
-
-  // for_each(pr.begin(), pr.end(),
-  //          [](std::pair<const int, std::vector<point<float, float>>> a) {
-  //            std::cout << a.first << ": ";
-  //            for_each(a.second.begin(), a.second.end(),
-  //                     [](point<float, float> j) { std::cout << j; });
-  //            SEPARATOR;
-  //          });
   count_x(truePos, 0);
   PRINT("len of pr variable: ", pr.size());
   return pr;
@@ -184,21 +144,6 @@ void coco::evaluation(const float* IOU_range) {
   std::vector<float> iouThrs(rng);
   // compute IOUs.
   get_scores();
-  // auto test = ious.find({139, 62});
-  // std::for_each(ious.begin(), ious.end(),
-  //               [](std::pair<Key, std::vector<float>> a) {
-  //                 Key x = {440475, 1};
-  //                 if (a.first == x) {
-  //                   PRINT("Current Key: ", a.first);
-  //                   std::for_each(a.second.begin(), a.second.end(),
-  //                                 [](float& j) { std::cout << j << ", "; });
-  //                   std::cout << std::endl;
-  //                   SEPARATOR;
-
-  //                 } else {
-  //                   auto x = 1;
-  //                 }
-  //               });
   PRINT("Size of dict<imgId><catId> of IOUs: ", ious.size());
   std::generate_n(iouThrs.begin(), iouThrs.size(), [IOU_range]() {
     static float iouThreshold = IOU_range[0] - IOU_range[2];
@@ -218,19 +163,6 @@ void coco::evaluation(const float* IOU_range) {
     }
     file.close();
   }
-
-  // std::vector<Key> keys;
-
-  // std::transform(ious.begin(), ious.end(), std::back_inserter(keys),
-  //                [](const auto& pair) { return pair.first; });
-  // std::for_each(ious.begin(), ious.end(),
-  //               [](const auto& pair) { std::cout << pair.first; });
-  // auto it = std::max_element(keys.begin(), keys.end());
-  // PRINT("Max catid", *it);
-  // filter(dt, score_thres); // using the fact that the data is already sorted.
-
-  // PRINT("size of dt", dt->size());
-  // computemAP(IOU_thres);
 }
 
 void coco::loadRes(const std::string resFile, std::string flag) {
@@ -256,16 +188,7 @@ void coco::loadRes(const std::string resFile, std::string flag) {
     EXTRACT(bbox, ann);
     dt[{image_id, category_id}].push_back(
         {0, image_id, category_id, score, bbox});
-    // dt[imgId].imgid = imgId;
-    // dt[imgId].catids.push_back(category_id);
-    // dt[imgId].scores.push_back(score);
   }
-  /*
-  would have to add a sort function if you want to draw bbox on the images.
-  */
-  // for (auto&& [key, value] : dt) {
-  //   PRINT(std::to_string(key) + ": ", value.len);
-  // }
   SEPARATOR;
 }
 coco::~coco() {}

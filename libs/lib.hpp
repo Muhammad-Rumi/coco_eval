@@ -13,35 +13,35 @@
 #define EXTRACT(x, J) x = J[#x].get<decltype(x)>()
 #define PRINT(message, variable) std::cout << message << variable << std::endl
 #define SEPARATOR std::cout << "-------------------------------" << std::endl
-template <typename _T, typename _Y>
+template <typename _T>
 struct point {
   _T x;
-  _Y y;
+  _T y;
+  bool operator()(_T value) const { return (value >= x && value <= y); }
   friend std::ostream& operator<<(std::ostream& os, const point& p) {
     return os << p.x << ", " << p.y;
   }
 };
+template <typename _T>
 struct Key {
-  int imgId;
-  int catId;
+  _T k1;
+  _T k2;
   friend std::ostream& operator<<(std::ostream& os, const Key& k) {
-    return os << k.imgId << ", " << k.catId;
+    return os << k.k1 << ", " << k.k2;
   }
 
   bool operator==(const Key& other) const {
-    return imgId == other.imgId && catId == other.catId;
+    return k1 == other.k1 && k2 == other.k2;
   }
   bool operator<(const Key& other) const {
-    return (imgId < other.imgId) ||
-           (imgId == other.imgId && catId < other.catId);
+    return (k1 < other.k1) || (k1 == other.k1 && k2 < other.k2);
   }
   bool operator>(const Key& other) const {
-    return (imgId > other.imgId) ||
-           (imgId == other.imgId && catId > other.catId);
+    return (k1 > other.k1) || (k1 == other.k1 && k2 > other.k2);
   }
   size_t hash() const {
-    std::hash<int> hasher;
-    return hasher(imgId) ^ hasher(catId);
+    std::hash<_T> hasher;
+    return hasher(k1) ^ hasher(k2);
   }
 };
 

@@ -52,31 +52,50 @@ struct label {
   float scores, area;
   std::vector<float> bbox;
 };
+struct params {
+  int x = 10;
+  std::vector<float> iou_Thrs;
+  std::vector<float> recThrs;
+  std::vector<int> maxDet;
+  std::vector<point<float>> aRng;
+  params() : x(10), iou_Thrs(10), recThrs(101), maxDet(3), aRng(4) {
+    aRng = {{0, 1E5 * 1E5},
+            {0, 32 * 32},
+            {32 * 32},
+            {96 * 96},
+            {96 * 96, 1E5 * 1E5}};
+    std::generate_n(iou_Thrs.begin(), iou_Thrs.size(), []() {
+      static float iouThreshold = 0.45;
+      iouThreshold += 0.05;
+      return iouThreshold;
+    });
+    std::generate_n(recThrs.begin(), recThrs.size(), []() {
+      static float iouThreshold = 0.;
+      iouThreshold += 0.01;
+      return iouThreshold;
+    });
+  }
+};
 
-template <typename _t, typename _y, typename _r>
-struct table {
-  static int inst;
-  int id, id1, id2;
-  _t truePos;
-  _y total_gt;
-  _r total_dt;
-  explicit table(const int& size) {
-    // inst = size;
-    id = -1, id1 = -1, id2 = -1;
-    truePos.resize(size);
-    total_gt.resize(size);
-    total_dt.resize(size);
-  }
-  table(const _t& tp, const _y& tg, const _r& td) {
-    inst++;
-    id = -1, id1 = -1, id2 = -1;
-    truePos = tp;
-    total_gt = tg;
-    total_dt = td;
-  }
-  table() {
-    // inst++;
-    id = -1, id1 = -1, id2 = -1;
+struct match {
+  using _2dvec = std::vector<std::vector<float>>;
+  int imgId, catId, maxDet;
+  point<float> aRng;
+  _2dvec dtm, gtm, dtIg;
+  std::vector<float> score;
+  std::vector<bool> gtIg;
+  match(const int& Id, const int& id, const int& Det,
+        const point<float>& area_rng, _2dvec d_match, _2dvec g_match,
+        _2dvec d_ig, std::vector<float> scores, std::vector<bool> g_ig) {
+    imgId = Id;
+    catId = id;
+    maxDet = Det;
+    aRng = area_rng;
+    dtm = d_match;
+    gtm = g_match;
+    dtIg = d_ig;
+    score = scores;
+    gtIg = g_ig;
   }
 };
 

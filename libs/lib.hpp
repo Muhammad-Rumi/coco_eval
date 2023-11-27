@@ -6,11 +6,10 @@
 #include <map>
 #include <memory>
 #include <nlohmann/json.hpp>
-#include <opencv2/opencv.hpp>
 #include <string>  // NOLINT
 #include <vector>  // NOLINT
 
-#define EP0 0.00001
+#define EP0 1.E-5
 #define EXTRACT(x, J) x = J[#x].get<decltype(x)>()
 #define PRINT(message, variable) std::cout << message << variable << std::endl
 #define SEPARATOR std::cout << "-------------------------------" << std::endl
@@ -26,7 +25,7 @@ struct Key {
   int imgId;
   int catId;
   friend std::ostream& operator<<(std::ostream& os, const Key& k) {
-    return os << k.imgId << ", " << k.catId << std::endl;
+    return os << k.imgId << ", " << k.catId;
   }
 
   bool operator==(const Key& other) const {
@@ -36,7 +35,7 @@ struct Key {
     return (imgId < other.imgId) ||
            (imgId == other.imgId && catId < other.catId);
   }
-bool operator>(const Key& other) const {
+  bool operator>(const Key& other) const {
     return (imgId > other.imgId) ||
            (imgId == other.imgId && catId > other.catId);
   }
@@ -47,9 +46,10 @@ bool operator>(const Key& other) const {
 };
 
 struct label {
+  int id;
   int is_crowd;
   int imgid, catids;
-  float scores;
+  float scores, area;
   std::vector<float> bbox;
 };
 
@@ -86,13 +86,12 @@ class coco {
   using _map_label = std::map<Key, std::vector<label>>;
   using _shared_map = std::shared_ptr<_map_label>;
   using _vecjson = std::vector<json>;
-  using _img_cat = std::map<Key, std::vector<float>>;
+  using _img_cat = std::map<Key, std::vector<std::vector<float>>>;
   using _curve = std::vector<point<float, float>>;
+  // using _eval_img = std::vector<
 
  private:
-  json dataset;
-  std::map<int, json> anns, cats, imgs, imgToAnns;
-  std::map<int, std::vector<int>> catToImgs;  //  must remove later
+  std::map<int, std::vector<int>> catToImgs;
   _map_label gt, dt;
   _img_cat ious;
 
@@ -104,8 +103,7 @@ class coco {
 
  private:
   void create_index();
-  float iou(const std::vector<float>& gt_bbox,
-            const std::vector<float>& dt_bbox);
+  float iou(const std::vector<float>&, const std::vector<float>&, const int&);
 
   void get_scores();
   std::map<int, _curve> precision_recall(const std::vector<float>& thres);
@@ -116,8 +114,7 @@ class coco {
   ~coco();
   void evaluation(const float* IOU_range);
   _vecjson get_annotations(int image_id);
-  // void loadRes(const std::string resFile);
-  void loadRes(const std::string resFile, std::string flag);
+  void loadRes(const std::string resFile);
 };
 void zero_loc(
     const std::vector<int>& myVector) {  // works for only sorted vectors, sad!!
@@ -135,19 +132,10 @@ void zero_loc(
 int count_x(const std::vector<int>& myVector, int x) {
   int Count = std::count_if(myVector.begin(), myVector.end(),
                             [x](int y) { return y == x; });
-  // std::cout << "Number of zeros: " << Count << std::endl;
-  // for (auto&& i : myVector) {
-  //   std::cout << i << std::endl;
-  // }
   return Count;
 }
 int count_x(const std::vector<label>& myVector, int x) {
   int Count = std::count_if(myVector.begin(), myVector.end(),
                             [x](label y) { return y.catids == x; });
-  // std::cout << "Number of zeros: " << Count << std::endl;
-  // for (auto&& i : myVector) {
-  //   std::cout << i << std::endl;
-  // }
   return Count;
 }
-

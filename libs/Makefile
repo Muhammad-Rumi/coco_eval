@@ -154,30 +154,6 @@ coco.cpp.s:
 	cd /home/user98/Training/ISP/efficientdet/cpp_eval && $(MAKE) $(MAKESILENT) -f libs/CMakeFiles/libs.dir/build.make libs/CMakeFiles/libs.dir/coco.cpp.s
 .PHONY : coco.cpp.s
 
-dataloader.o: dataloader.cpp.o
-.PHONY : dataloader.o
-
-# target to build an object file
-dataloader.cpp.o:
-	cd /home/user98/Training/ISP/efficientdet/cpp_eval && $(MAKE) $(MAKESILENT) -f libs/CMakeFiles/libs.dir/build.make libs/CMakeFiles/libs.dir/dataloader.cpp.o
-.PHONY : dataloader.cpp.o
-
-dataloader.i: dataloader.cpp.i
-.PHONY : dataloader.i
-
-# target to preprocess a source file
-dataloader.cpp.i:
-	cd /home/user98/Training/ISP/efficientdet/cpp_eval && $(MAKE) $(MAKESILENT) -f libs/CMakeFiles/libs.dir/build.make libs/CMakeFiles/libs.dir/dataloader.cpp.i
-.PHONY : dataloader.cpp.i
-
-dataloader.s: dataloader.cpp.s
-.PHONY : dataloader.s
-
-# target to generate assembly for a file
-dataloader.cpp.s:
-	cd /home/user98/Training/ISP/efficientdet/cpp_eval && $(MAKE) $(MAKESILENT) -f libs/CMakeFiles/libs.dir/build.make libs/CMakeFiles/libs.dir/dataloader.cpp.s
-.PHONY : dataloader.cpp.s
-
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -190,9 +166,6 @@ help:
 	@echo "... coco.o"
 	@echo "... coco.i"
 	@echo "... coco.s"
-	@echo "... dataloader.o"
-	@echo "... dataloader.i"
-	@echo "... dataloader.s"
 .PHONY : help
 
 

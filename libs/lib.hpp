@@ -99,42 +99,55 @@ struct match {
   }
 };
 
-class coco {
- protected:
-  using json = nlohmann::json;
-  using _map_label = std::map<Key, std::vector<label>>;
-  using _shared_map = std::shared_ptr<_map_label>;
-  using _vecjson = std::vector<json>;
-  using _img_cat = std::map<Key, std::vector<std::vector<float>>>;
-  using _curve = std::vector<point<float, float>>;
-  // using _eval_img = std::vector<
+class tensor {
+ public:
+  explicit tensor(const std::vector<int>& dimensions, int initialValue = 0)
+      : dimensions_(dimensions),
+        size_(calculateSize(dimensions)),
+        data_(size_, initialValue) {}
+
+  int& operator()(const std::vector<int>& indices) {
+    int index = calculateIndex(indices);
+    return data_[index];
+  }
+
+  void print() const {
+    for (int value : data_) {
+      std::cout << value << " ";
+    }
+    std::cout << std::endl;
+  }
 
  private:
-  std::map<int, std::vector<int>> catToImgs;
-  _map_label gt, dt;
-  _img_cat ious;
+  std::vector<int> dimensions_;
+  int size_;
+  std::vector<int> data_;
 
- public:
-  std::string validation_file;
-  std::string detection_file;
-  std::vector<int> imgIds;
-  std::vector<int> catIds;
+  int calculateSize(const std::vector<int>& dims) const {
+    int size = 1;
+    for (int dim : dims) {
+      size *= dim;
+    }
+    return size;
+  }
 
- private:
-  void create_index();
-  float iou(const std::vector<float>&, const std::vector<float>&, const int&);
+  int calculateIndex(const std::vector<int>& indices) const {
+    int index = 0;
+    int stride = 1;
+    bool flag = 0;
+    for (int i = 0; i < indices.size(); i++) {
+      flag = indices[i] < dimensions_[i];
+    }
 
-  void get_scores();
-  std::map<int, _curve> precision_recall(const std::vector<float>& thres);
-  float computemAP(float thres);
-
- public:
-  explicit coco(const std::string&);
-  ~coco();
-  void evaluation(const float* IOU_range);
-  _vecjson get_annotations(int image_id);
-  void loadRes(const std::string resFile);
+    assert(flag);
+    for (int i = dimensions_.size() - 1; i >= 0; --i) {
+      index += indices[i] * stride;
+      stride *= dimensions_[i];
+    }
+    return index;
+  }
 };
+
 void zero_loc(
     const std::vector<int>& myVector) {  // works for only sorted vectors, sad!!
   std::vector<int> tempVector = myVector;

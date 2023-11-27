@@ -1,6 +1,7 @@
 // Copyright [2023] <Mhammad Rumi>
 
 #pragma once
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -41,6 +42,7 @@ class coco {
   void get_scores();
   std::map<int, _curve> precision_recall(const std::vector<float>& thres);
   float computemAP(float thres);
+  void accumulate();
 
  public:
   explicit coco(const std::string&);
